@@ -54,8 +54,15 @@ body {
     font-size: 1.25rem;
     font-weight: 700;
     text-align: center;
-    margin-bottom: 16px;
     color: var(--text-main);
+}
+
+.header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    position: relative;
 }
 
 .calendar-nav {
@@ -472,6 +479,190 @@ textarea:focus, .time-input:focus {
 .toast.show {
     transform: translateX(-50%) translateY(0);
     opacity: 1;
+}
+
+/* --- Sidebar Menu & Gamification --- */
+.sidebar-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px);
+    z-index: 998;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.sidebar-backdrop.active {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: -300px; /* Hidden by default */
+    width: 280px;
+    height: 100%;
+    background: var(--card-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-right: 1px solid rgba(34, 197, 94, 0.2);
+    z-index: 999;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.5);
+}
+
+.sidebar.active {
+    transform: translateX(300px); /* 280px width + 20px overlap fix */
+}
+
+.sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.user-profile {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.avatar {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, var(--primary), #059669);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+}
+
+.user-info h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.user-title {
+    font-size: 0.8rem;
+    color: var(--primary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+}
+
+.sidebar-content {
+    padding: 24px 20px;
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+/* Gamification / Level Card */
+.level-card {
+    background: rgba(10, 15, 10, 0.5);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 24px;
+}
+
+.level-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.level-text {
+    font-size: 1.1rem;
+    color: var(--text-main);
+}
+
+.level-text strong {
+    color: var(--primary);
+    font-size: 1.3rem;
+}
+
+.xp-text {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.progress-bar-bg {
+    width: 100%;
+    height: 8px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 100px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #10b981, var(--primary));
+    border-radius: 100px;
+    box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.level-msg {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-align: center;
+    margin-top: 8px;
+}
+
+/* Sidebar Navigation Elements Placeholder */
+.sidebar-nav {
+    margin-top: 24px;
+}
+
+.nav-section-title {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+}
+
+.nav-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.nav-list li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 12px;
+    color: var(--text-main);
+    cursor: pointer;
+    transition: background 0.2s;
+    font-size: 0.95rem;
+}
+
+.nav-list li:hover {
+    background: rgba(255,255,255,0.05);
+}
+
+.nav-list li i {
+    font-size: 1.25rem;
+    color: var(--text-muted);
 }
 
 @media (min-width: 600px) {

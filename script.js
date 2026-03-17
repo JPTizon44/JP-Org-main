@@ -1,10 +1,12 @@
 const app = {
     currentDate: new Date(),
     data: {}, // { 'YYYY-MM-DD': { lembretes: [], notas: [], avisos: [] } }
+    user: { xp: 0 }, // User Profile settings for Gamification
 
     init() {
         this.loadData();
         this.setupCalendar();
+        this.setupSidebar();
         this.checkNotificationStatus();
         this.renderAll();
         
@@ -81,16 +83,89 @@ const app = {
         }
     },
 
+    // --- Sidebar (Menu Hambúrguer) ---
+    setupSidebar() {
+        const btnMenu = document.getElementById('btn-menu');
+        const btnClose = document.getElementById('btn-close-menu');
+        const sidebar = document.getElementById('sidebar-menu');
+        const backdrop = document.getElementById('sidebar-backdrop');
+        
+        const openSidebar = () => {
+            sidebar.classList.add('active');
+            backdrop.classList.add('active');
+        };
+        
+        const closeSidebar = () => {
+            sidebar.classList.remove('active');
+            backdrop.classList.remove('active');
+        };
+
+        btnMenu.addEventListener('click', openSidebar);
+        btnClose.addEventListener('click', closeSidebar);
+        backdrop.addEventListener('click', closeSidebar);
+        
+        // Touch Swipe to close (mobile friendly)
+        let touchStartX = 0;
+        let touchEndX = 0;
+        
+        sidebar.addEventListener('touchstart', e => {
+            touchStartX = e.changedTouches[0].screenX;
+        }, {passive: true});
+        
+        sidebar.addEventListener('touchend', e => {
+            touchEndX = e.changedTouches[0].screenX;
+            if (touchEndX < touchStartX - 50) closeSidebar(); // Swiped left
+        }, {passive: true});
+        
+        this.updateProfileUI();
+    },
+
+    // --- Gamification ---
+    updateProfileUI() {
+        const xp = this.user.xp || 0;
+        const level = Math.floor(xp / 100) + 1; // 1 level per 100 XP
+        const currentLevelXp = xp % 100;
+        const xpRequired = 100; // Target to next level
+
+        const progressPercent = (currentLevelXp / xpRequired) * 100;
+
+        document.getElementById('user-level').textContent = level;
+        document.getElementById('user-xp').textContent = xp;
+        document.getElementById('xp-target').textContent = xpRequired * level;
+        document.getElementById('level-progress-fill').style.width = `${progressPercent}%`;
+
+        // Optional: Update text occasionally
+        const msgEl = document.getElementById('level-msg');
+        if (level === 1) msgEl.textContent = 'Complete as tarefas de hoje!';
+        else if (level < 5) msgEl.textContent = 'Bom progresso, Agente!';
+        else msgEl.textContent = 'Você é uma lenda, Sentinela!';
+    },
+
+    addXP(amount) {
+        // Increment avoiding negatives
+        this.user.xp = Math.max(0, this.user.xp + amount);
+        this.saveData();
+        this.updateProfileUI();
+        
+        if (amount > 0) this.showToast(`+${amount} XP ganho!`);
+    },
+
     // --- Persistência (localStorage) ---
     loadData() {
         const stored = localStorage.getItem('daySyncData');
         if (stored) {
             this.data = JSON.parse(stored);
         }
+        
+        const storedUser = localStorage.getItem('userSentinel');
+        if (storedUser) {
+            this.user = JSON.parse(storedUser);
+        }
     },
 
     saveData() {
         localStorage.setItem('daySyncData', JSON.stringify(this.data));
+        localStorage.setItem('userSentinel', JSON.stringify(this.user));
     },
 
     // --- Calendário e Datas ---
@@ -311,6 +386,16 @@ const app = {
         const item = dailyData[category].find(i => i.id === id);
         if (item) {
             item.isDone = !item.isDone;
+            
+            // Gamification Rewards
+            if (item.isDone) {
+                const reward = item.priority === 'emergencia' ? 15 : item.priority === 'neutro' ? 10 : 5;
+                this.addXP(reward);
+            } else {
+                const penalty = item.priority === 'emergencia' ? -15 : item.priority === 'neutro' ? -10 : -5;
+                this.addXP(penalty); // Penalty for undoing
+            }
+            
             this.saveData();
             this.renderAll();
         }

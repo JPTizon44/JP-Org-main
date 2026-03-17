@@ -22,7 +22,14 @@
 </head>
 <body>
     <header class="header">
-        <h1 class="app-title">JP SENTINEL</h1>
+        <div class="header-top">
+            <button id="btn-menu" class="icon-btn" aria-label="Abrir Menu">
+                <i class="ph ph-list"></i>
+            </button>
+            <h1 class="app-title">JP SENTINEL</h1>
+            <!-- Space filler to center the title -->
+            <div style="width: 40px;"></div>
+        </div>
         <div class="calendar-nav">
             <button id="prev-day-btn" class="icon-btn" aria-label="Dia anterior">
                 <i class="ph ph-caret-left"></i>
@@ -41,6 +48,47 @@
             <i class="ph ph-bell-ringing"></i>
         </button>
     </header>
+
+    <!-- Menu Lateral (Sidebar) -->
+    <div id="sidebar-backdrop" class="sidebar-backdrop"></div>
+    <aside id="sidebar-menu" class="sidebar">
+        <div class="sidebar-header">
+            <div class="user-profile">
+                <div class="avatar">
+                    <i class="ph ph-user"></i>
+                </div>
+                <div class="user-info">
+                    <h3>Usuário</h3>
+                    <span class="user-title">Agente Sentinel</span>
+                </div>
+            </div>
+            <button id="btn-close-menu" class="icon-btn" aria-label="Fechar Menu">
+                <i class="ph ph-x"></i>
+            </button>
+        </div>
+        
+        <div class="sidebar-content">
+            <div class="level-card">
+                <div class="level-header">
+                    <span class="level-text">Nível <strong id="user-level">1</strong></span>
+                    <span class="xp-text"><span id="user-xp">0</span> / <span id="xp-target">100</span> XP</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div id="level-progress-fill" class="progress-bar-fill" style="width: 0%;"></div>
+                </div>
+                <p class="level-msg" id="level-msg">Complete tarefas para subir de nível!</p>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <div class="nav-section-title">OBJETIVOS</div>
+                <ul class="nav-list">
+                    <li><i class="ph ph-crosshair"></i> Missões Diárias (XP Bônus)</li>
+                    <li><i class="ph ph-medal"></i> Conquistas</li>
+                    <li><i class="ph ph-chart-line-up"></i> Estatísticas</li>
+                </ul>
+            </nav>
+        </div>
+    </aside>
 
     <main class="container">
         <!-- Section: Lembretes -->
