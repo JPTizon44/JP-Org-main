@@ -99,6 +99,9 @@ const app = {
         const sidebar = document.getElementById('sidebar-menu');
         const backdrop = document.getElementById('sidebar-backdrop');
         
+        // Anti-crash Guard for corrupted cached HTMLs
+        if (!btnMenu || !btnClose || !sidebar || !backdrop) return;
+        
         const openSidebar = () => {
             sidebar.classList.add('active');
             backdrop.classList.add('active');
@@ -147,31 +150,42 @@ const app = {
         const xpRequired = 100; // Target to next level
         
         const rank = this.getRankConfig(level);
-        document.querySelector('.user-title').innerHTML = `<i class="ph ${rank.icon}"></i> ${rank.title}`;
+        
+        const userTitleEl = document.querySelector('.user-title');
+        if (userTitleEl) userTitleEl.innerHTML = `<i class="ph ${rank.icon}"></i> ${rank.title}`;
         
         // Update Small Badge
         const badge = document.getElementById('rank-badge');
-        badge.className = `rank-badge ${rank.color}`;
-        badge.innerHTML = `<i class="ph ${rank.icon}"></i> Lv${level}`;
+        if (badge) {
+            badge.className = `rank-badge ${rank.color}`;
+            badge.innerHTML = `<i class="ph ${rank.icon}"></i> Lv${level}`;
+        }
 
         // Update Avatar Image if exists
         const avatarContainer = document.getElementById('user-avatar-base');
-        if (this.user.avatar) {
-            avatarContainer.innerHTML = `<img src="${this.user.avatar}" alt="Avatar">`;
-        } else {
-            avatarContainer.innerHTML = `<i class="ph ph-user"></i>`;
+        if (avatarContainer) {
+            if (this.user.avatar) {
+                avatarContainer.innerHTML = `<img src="${this.user.avatar}" alt="Avatar">`;
+            } else {
+                avatarContainer.innerHTML = `<i class="ph ph-user"></i>`;
+            }
         }
 
         const progressPercent = (currentLevelXp / xpRequired) * 100;
 
-        document.getElementById('user-level').textContent = level;
-        document.getElementById('user-xp').textContent = xp;
-        document.getElementById('xp-target').textContent = xpRequired * level;
-        document.getElementById('level-progress-fill').style.width = `${progressPercent}%`;
+        const levelEl = document.getElementById('user-level');
+        const xpEl = document.getElementById('user-xp');
+        const targetEl = document.getElementById('xp-target');
+        const progressEl = document.getElementById('level-progress-fill');
+        
+        if (levelEl) levelEl.textContent = level;
+        if (xpEl) xpEl.textContent = xp;
+        if (targetEl) targetEl.textContent = xpRequired * level;
+        if (progressEl) progressEl.style.width = `${progressPercent}%`;
 
         // Optional: Update text occasionally
         const msgEl = document.getElementById('level-msg');
-        msgEl.textContent = `Patente: ${rank.title}`;
+        if (msgEl) msgEl.textContent = `Patente: ${rank.title}`;
     },
 
     changeAvatar(event) {
@@ -190,8 +204,12 @@ const app = {
     },
 
     openCropModal(imageSrc) {
-        document.getElementById('crop-modal').classList.add('active');
+        const cropModal = document.getElementById('crop-modal');
         const imageObj = document.getElementById('crop-image');
+        
+        if (!cropModal || !imageObj) return; // Guard against broken HTML
+        
+        cropModal.classList.add('active');
         imageObj.src = imageSrc;
         
         // If an old instance exists, destroy it.
@@ -216,7 +234,9 @@ const app = {
     },
 
     closeCropModal() {
-        document.getElementById('crop-modal').classList.remove('active');
+        const cropModal = document.getElementById('crop-modal');
+        if (cropModal) cropModal.classList.remove('active');
+        
         if (this.cropperInfo.instance) {
             this.cropperInfo.instance.destroy();
             this.cropperInfo.instance = null;
@@ -255,17 +275,26 @@ const app = {
 
     // --- Grandes Objetivos de Vida (Mural dos Sonhos) ---
     promptNewDream() {
-        document.getElementById('dream-text').value = '';
-        document.getElementById('dream-modal').classList.add('active');
-        setTimeout(() => document.getElementById('dream-text').focus(), 100);
+        const dreamText = document.getElementById('dream-text');
+        const dreamModal = document.getElementById('dream-modal');
+        
+        if (!dreamText || !dreamModal) return; // Guard clause
+        
+        dreamText.value = '';
+        dreamModal.classList.add('active');
+        setTimeout(() => dreamText.focus(), 100);
     },
 
     closeDreamModal() {
-        document.getElementById('dream-modal').classList.remove('active');
+        const dreamModal = document.getElementById('dream-modal');
+        if (dreamModal) dreamModal.classList.remove('active');
     },
 
     saveDream() {
-        const text = document.getElementById('dream-text').value;
+        const textObj = document.getElementById('dream-text');
+        if (!textObj) return;
+        
+        const text = textObj.value;
         if (text && text.trim()) {
             if (!this.user.dreams) this.user.dreams = [];
             const newId = Date.now().toString(36) + Math.random().toString(36).substr(2);

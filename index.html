@@ -19,7 +19,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
 
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=7">
 </head>
 <body>
     <header class="header">
@@ -250,12 +250,15 @@
     <!-- Toast Notification -->
     <div id="toast" class="toast">Trabalho salvo com sucesso!</div>
 
-    <script src="script.js"></script>
+    <script src="script.js?v=7"></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
-                    .then(registration => console.log('SW registered'))
+                navigator.serviceWorker.register('sw.js?v=7')
+                    .then(registration => {
+                        console.log('SW registered');
+                        registration.update(); // Force background update of the SW
+                    })
                     .catch(error => console.log('SW registration failed'));
             });
         }
