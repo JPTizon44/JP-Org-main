@@ -1,0 +1,17 @@
+<svg xmlns="http://www.svg/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+    <!-- Background Circle -->
+    <rect width="512" height="512" rx="116" fill="#007aff"/>
+    
+    <!-- Calendar Body -->
+    <rect x="120" y="140" width="272" height="250" rx="24" fill="#ffffff"/>
+    
+    <!-- Calendar Header (Red Top) -->
+    <path d="M120 164C120 150.745 130.745 140 144 140H368C381.255 140 392 150.745 392 164V210H120V164Z" fill="#ff3b30"/>
+    
+    <!-- Rings -->
+    <rect x="160" y="100" width="24" height="60" rx="12" fill="#E5E5EA"/>
+    <rect x="328" y="100" width="24" height="60" rx="12" fill="#E5E5EA"/>
+
+    <!-- Checkmark inside Calendar -->
+    <path d="M210 280 L240 310 L310 240" stroke="#34c759" stroke-width="32" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+</svg>

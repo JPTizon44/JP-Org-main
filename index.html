@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>JP SENTINEL</title>
+    <!-- Favicon and PWA setup -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#f0f2f5">
+    <link rel="icon" type="image/svg+xml" href="icon.svg">
+    <link rel="apple-touch-icon" href="icon.svg">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Phosphor Icons (Modern, Clean Icons) -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="header">
+        <h1 class="app-title">JP SENTINEL</h1>
+        <div class="calendar-nav">
+            <button id="prev-day-btn" class="icon-btn" aria-label="Dia anterior">
+                <i class="ph ph-caret-left"></i>
+            </button>
+            <div class="date-selector-wrapper">
+                <div id="current-date-display" class="current-date"></div>
+                <!-- Native date picker overlay -->
+                <input type="date" id="date-picker" class="hidden-date-picker">
+            </div>
+            <button id="next-day-btn" class="icon-btn" aria-label="Próximo dia">
+                <i class="ph ph-caret-right"></i>
+            </button>
+        </div>
+        <div id="daily-progress" class="progress-text"></div>
+        <button id="btn-request-notify" class="action-btn" style="position:absolute; right:16px; top:12px; font-size:1.5rem; color:var(--primary); background:rgba(0,0,0,0.5); border-radius:12px; display:none;" aria-label="Ativar Notificações" onclick="app.requestNotificationPermission()">
+            <i class="ph ph-bell-ringing"></i>
+        </button>
+    </header>
+
+    <main class="container">
+        <!-- Section: Lembretes -->
+        <section class="card" id="section-lembretes">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="ph ph-bell"></i>
+                    <h2>Lembretes</h2>
+                </div>
+                <button class="add-btn" onclick="app.openModal('lembretes')" aria-label="Adicionar Lembrete">
+                    <i class="ph ph-plus"></i>
+                </button>
+            </div>
+            <div class="item-list" id="list-lembretes">
+                <!-- Items will be injected here -->
+            </div>
+        </section>
+
+        <!-- Section: Notas -->
+        <section class="card" id="section-notas">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="ph ph-notepad"></i>
+                    <h2>Notas</h2>
+                </div>
+                <button class="add-btn" onclick="app.openModal('notas')" aria-label="Adicionar Nota">
+                    <i class="ph ph-plus"></i>
+                </button>
+            </div>
+            <div class="item-list" id="list-notas">
+                <!-- Items will be injected here -->
+            </div>
+        </section>
+
+        <!-- Section: Avisos -->
+        <section class="card" id="section-avisos">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="ph ph-warning-circle"></i>
+                    <h2>Avisos</h2>
+                </div>
+                <button class="add-btn" onclick="app.openModal('avisos')" aria-label="Adicionar Aviso">
+                    <i class="ph ph-plus"></i>
+                </button>
+            </div>
+            <div class="item-list" id="list-avisos">
+                <!-- Items will be injected here -->
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal for Add/Edit -->
+    <div id="item-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Novo Item</h3>
+                <button class="close-btn" onclick="app.closeModal()" aria-label="Fechar">
+                    <i class="ph ph-x"></i>
+                </button>
+            </div>
+            <form id="item-form" onsubmit="app.saveItem(event)">
+                <input type="hidden" id="item-id">
+                <input type="hidden" id="item-category">
+                
+                <div class="input-group">
+                    <label for="item-text">Descrição</label>
+                    <textarea id="item-text" rows="3" required placeholder="Digite aqui..."></textarea>
+                </div>
+
+                <div class="input-group" id="time-group">
+                    <label for="item-time">Horário da Notificação (Opcional)</label>
+                    <input type="time" id="item-time" class="time-input">
+                </div>
+
+                <div class="input-group">
+                    <label>Prioridade</label>
+                    <div class="priority-selector">
+                        <label class="priority-option priority-emergencia">
+                            <input type="radio" name="priority" value="emergencia" required>
+                            <span class="indicator"></span> Emergência
+                        </label>
+                        <label class="priority-option priority-neutro">
+                            <input type="radio" name="priority" value="neutro">
+                            <span class="indicator"></span> Neutro
+                        </label>
+                        <label class="priority-option priority-tranquilo">
+                            <input type="radio" name="priority" value="tranquilo">
+                            <span class="indicator"></span> Tranquilo
+                        </label>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn-cancel" onclick="app.closeModal()">Cancelar</button>
+                    <button type="submit" class="btn-save">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">Trabalho salvo com sucesso!</div>
+
+    <script src="script.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(registration => console.log('SW registered'))
+                    .catch(error => console.log('SW registration failed'));
+            });
+        }
+    </script>
+</body>
+</html>

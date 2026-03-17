@@ -1,0 +1,17 @@
+{
+  "name": "JP SENTINEL",
+  "short_name": "JP SENTINEL",
+  "description": "Aplicativo para organização pessoal com notas e calendário.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f0f2f5",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
