@@ -54,12 +54,21 @@
     <aside id="sidebar-menu" class="sidebar">
         <div class="sidebar-header">
             <div class="user-profile">
-                <div class="avatar">
-                    <i class="ph ph-user"></i>
-                </div>
+                <!-- Avatar clicável file upload -->
+                <input type="file" id="avatar-upload" accept="image/*" style="display:none;" onchange="app.changeAvatar(event)">
+                <label for="avatar-upload" class="avatar-wrapper" aria-label="Mudar foto de perfil" style="position:relative; cursor:pointer;">
+                    <div class="avatar" id="user-avatar-base">
+                        <i class="ph ph-user"></i>
+                    </div>
+                </label>
+                
                 <div class="user-info">
                     <h3>Usuário</h3>
-                    <span class="user-title">Agente Sentinel</span>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <span class="user-title"><i class="ph ph-shield"></i> Recruta Sentinel</span>
+                        <!-- Extra small badge for visual impact -->
+                        <span id="rank-badge" class="rank-badge rank-bronze"></span>
+                    </div>
                 </div>
             </div>
             <button id="btn-close-menu" class="icon-btn" aria-label="Fechar Menu">

@@ -130,13 +130,13 @@ const app = {
 
     // --- Gamification & Ranks ---
     getRankConfig(level) {
-        if (level < 10) return { title: 'Recruta Sentinel', icon: 'ph-shield' };
-        if (level < 20) return { title: 'Agente Operacional', icon: 'ph-shield-check' };
-        if (level < 30) return { title: 'Especialista Tático', icon: 'ph-target' };
-        if (level < 50) return { title: 'Comandante', icon: 'ph-shield-star' };
-        if (level < 75) return { title: 'Elite Sentinel', icon: 'ph-lightning' };
-        if (level < 100) return { title: 'Mestre Guardião', icon: 'ph-crown' };
-        return { title: 'Lenda Sentinel', icon: 'ph-shooting-star' };
+        if (level < 10) return { title: 'Recruta Sentinel', icon: 'ph-shield', color: 'rank-bronze' };
+        if (level < 20) return { title: 'Agente Operacional', icon: 'ph-shield-check', color: 'rank-silver' };
+        if (level < 30) return { title: 'Especialista Tático', icon: 'ph-target', color: 'rank-gold' };
+        if (level < 50) return { title: 'Comandante', icon: 'ph-shield-star', color: 'rank-platinum' };
+        if (level < 75) return { title: 'Elite Sentinel', icon: 'ph-lightning', color: 'rank-diamond' };
+        if (level < 100) return { title: 'Mestre Guardião', icon: 'ph-crown', color: 'rank-diamond' };
+        return { title: 'Lenda Sentinel', icon: 'ph-shooting-star', color: 'rank-diamond' };
     },
 
     updateProfileUI() {
@@ -147,6 +147,19 @@ const app = {
         
         const rank = this.getRankConfig(level);
         document.querySelector('.user-title').innerHTML = `<i class="ph ${rank.icon}"></i> ${rank.title}`;
+        
+        // Update Small Badge
+        const badge = document.getElementById('rank-badge');
+        badge.className = `rank-badge ${rank.color}`;
+        badge.innerHTML = `<i class="ph ${rank.icon}"></i> Lv${level}`;
+
+        // Update Avatar Image if exists
+        const avatarContainer = document.getElementById('user-avatar-base');
+        if (this.user.avatar) {
+            avatarContainer.innerHTML = `<img src="${this.user.avatar}" alt="Avatar">`;
+        } else {
+            avatarContainer.innerHTML = `<i class="ph ph-user"></i>`;
+        }
 
         const progressPercent = (currentLevelXp / xpRequired) * 100;
 
@@ -158,6 +171,26 @@ const app = {
         // Optional: Update text occasionally
         const msgEl = document.getElementById('level-msg');
         msgEl.textContent = `Patente: ${rank.title}`;
+    },
+
+    changeAvatar(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        // Limita a arquivos pequenos para não estourar localStorage limit
+        if (file.size > 2 * 1024 * 1024) { // 2MB
+            alert('A foto deve ter no máximo 2MB.');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            this.user.avatar = e.target.result;
+            this.saveData();
+            this.updateProfileUI();
+            this.showToast('Foto de perfil atualizada!');
+        };
+        reader.readAsDataURL(file);
     },
 
     addXP(amount) {

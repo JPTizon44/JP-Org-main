@@ -547,6 +547,20 @@ textarea:focus, .time-input:focus {
     font-size: 1.5rem;
     color: white;
     box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+    overflow: hidden; /* so the image is clipped round */
+    position: relative;
+    transition: transform 0.2s;
+}
+
+.avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.avatar-wrapper:hover .avatar {
+    transform: scale(1.05);
 }
 
 .user-info h3 {
@@ -562,6 +576,25 @@ textarea:focus, .time-input:focus {
     letter-spacing: 1px;
     font-weight: 600;
 }
+
+.rank-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.6rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: white;
+}
+
+/* Rank Color Tiers */
+.rank-bronze { background: linear-gradient(135deg, #b87333, #8a5a19); box-shadow: 0 0 5px rgba(184, 115, 51, 0.5); }
+.rank-silver { background: linear-gradient(135deg, #c0c0c0, #717171); box-shadow: 0 0 5px rgba(192, 192, 192, 0.5); }
+.rank-gold   { background: linear-gradient(135deg, #ffd700, #b8860b); box-shadow: 0 0 5px rgba(255, 215, 0, 0.5); text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+.rank-platinum { background: linear-gradient(135deg, #e5e4e2, #7eb9e6); box-shadow: 0 0 8px rgba(126, 185, 230, 0.6); color: #0f172a;}
+.rank-diamond { background: linear-gradient(135deg, #b9f2ff, #2563eb); box-shadow: 0 0 10px rgba(37, 99, 235, 0.8); }
 
 .sidebar-content {
     padding: 24px 20px;
