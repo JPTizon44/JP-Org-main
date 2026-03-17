@@ -1,7 +1,8 @@
 const app = {
     currentDate: new Date(),
     data: {}, // { 'YYYY-MM-DD': { lembretes: [], notas: [], avisos: [] } }
-    user: { xp: 0, dreams: [] }, // User Profile settings for Gamification
+    user: { xp: 0, dreams: [], avatar: null }, // User Profile settings for Gamification
+    cropperInfo: { instance: null }, // Stores Cropper instance
 
     init() {
         this.loadData();
@@ -177,20 +178,70 @@ const app = {
         const file = event.target.files[0];
         if (!file) return;
 
-        // Limita a arquivos pequenos para não estourar localStorage limit
-        if (file.size > 2 * 1024 * 1024) { // 2MB
-            alert('A foto deve ter no máximo 2MB.');
-            return;
-        }
-
+        // Não há mais limite de tamanho rígido no input inicial (já que será comprimido a seguir)
         const reader = new FileReader();
         reader.onload = (e) => {
-            this.user.avatar = e.target.result;
-            this.saveData();
-            this.updateProfileUI();
-            this.showToast('Foto de perfil atualizada!');
+            app.openCropModal(e.target.result);
         };
         reader.readAsDataURL(file);
+        
+        // Reset file input para permitir pegar a mesma foto denovo se cancelado
+        event.target.value = '';
+    },
+
+    openCropModal(imageSrc) {
+        document.getElementById('crop-modal').classList.add('active');
+        const imageObj = document.getElementById('crop-image');
+        imageObj.src = imageSrc;
+        
+        // If an old instance exists, destroy it.
+        if (this.cropperInfo.instance) {
+            this.cropperInfo.instance.destroy();
+        }
+        
+        // Initialize Cropper API
+        this.cropperInfo.instance = new Cropper(imageObj, {
+            aspectRatio: 1, // Fixa para corte 1:1 quadrado (perfeito pra avatar)
+            viewMode: 1,
+            dragMode: 'move', // Puxar na tela movimenta a foto
+            autoCropArea: 0.9,
+            restore: false,
+            guides: false,
+            center: true,
+            highlight: false,
+            cropBoxMovable: false,
+            cropBoxResizable: false, // Caixa fixa no centro
+            toggleDragModeOnDblclick: false
+        });
+    },
+
+    closeCropModal() {
+        document.getElementById('crop-modal').classList.remove('active');
+        if (this.cropperInfo.instance) {
+            this.cropperInfo.instance.destroy();
+            this.cropperInfo.instance = null;
+        }
+    },
+
+    applyCrop() {
+        if (!this.cropperInfo.instance) return;
+
+        // Extrai a imagem final formatada e comprimida pra 150x150 JPEG (reduz o 2MB pra meros ~15KBs)
+        const canvas = this.cropperInfo.instance.getCroppedCanvas({
+            width: 200,
+            height: 200,
+            imageSmoothingEnabled: true,
+            imageSmoothingQuality: 'high',
+        });
+
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.85); // Compressão Jpeg de 85%
+
+        this.user.avatar = compressedBase64;
+        this.saveData();
+        this.updateProfileUI();
+        this.showToast('Foto do perfil linda salva!');
+        
+        this.closeCropModal();
     },
 
     addXP(amount) {
