@@ -255,7 +255,17 @@ const app = {
 
     // --- Grandes Objetivos de Vida (Mural dos Sonhos) ---
     promptNewDream() {
-        const text = prompt('Qual é o seu Grande Objetivo de Vida? (Ex: Comprar Casa, Viajar o Mundo, Carro dos Sonhos)');
+        document.getElementById('dream-text').value = '';
+        document.getElementById('dream-modal').classList.add('active');
+        setTimeout(() => document.getElementById('dream-text').focus(), 100);
+    },
+
+    closeDreamModal() {
+        document.getElementById('dream-modal').classList.remove('active');
+    },
+
+    saveDream() {
+        const text = document.getElementById('dream-text').value;
         if (text && text.trim()) {
             if (!this.user.dreams) this.user.dreams = [];
             const newId = Date.now().toString(36) + Math.random().toString(36).substr(2);
@@ -263,6 +273,7 @@ const app = {
             this.saveData();
             this.renderDreams();
             this.showToast('Objetivo salvo! Mantenha o foco.');
+            this.closeDreamModal();
         }
     },
 

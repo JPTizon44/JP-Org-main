@@ -227,6 +227,26 @@
         </div>
     </div>
 
+    <!-- Modal de Objetivos de Vida -->
+    <div id="dream-modal" class="modal" style="z-index: 1060;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Novo Objetivo de Vida</h3>
+                <button class="close-btn" onclick="app.closeDreamModal()" aria-label="Fechar">
+                    <i class="ph ph-x"></i>
+                </button>
+            </div>
+            <div class="input-group">
+                <label for="dream-text">Qual o seu grande objetivo?</label>
+                <textarea id="dream-text" rows="2" placeholder="Ex: Comprar um carro, Viajar o mundo..." required></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-cancel" onclick="app.closeDreamModal()">Cancelar</button>
+                <button type="button" class="btn-save" onclick="app.saveDream()">Salvar</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Notification -->
     <div id="toast" class="toast">Trabalho salvo com sucesso!</div>
 
