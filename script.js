@@ -6,6 +6,13 @@ const app = {
 
     init() {
         this.loadData();
+        
+        // Garante que sonhos seja um array válido para varrer, evitando break mudo do foreach
+        if (!Array.isArray(this.user.dreams)) {
+            this.user.dreams = [];
+            this.saveData();
+        }
+
         this.setupCalendar();
         this.setupSidebar();
         this.checkNotificationStatus();
@@ -318,7 +325,7 @@ const app = {
         const container = document.getElementById('dreams-list');
         if (!container) return; // fail-safe depending on HTML
         
-        const dreams = this.user.dreams || [];
+        const dreams = Array.isArray(this.user.dreams) ? this.user.dreams : [];
         container.innerHTML = '';
         
         if (dreams.length === 0) {
@@ -346,14 +353,24 @@ const app = {
 
     // --- Persistência (localStorage) ---
     loadData() {
-        const stored = localStorage.getItem('daySyncData');
-        if (stored) {
-            this.data = JSON.parse(stored);
+        try {
+            const stored = localStorage.getItem('daySyncData');
+            if (stored) {
+                this.data = JSON.parse(stored);
+            }
+        } catch (e) {
+            this.data = {};
         }
         
-        const storedUser = localStorage.getItem('userSentinel');
-        if (storedUser) {
-            this.user = JSON.parse(storedUser);
+        try {
+            const storedUser = localStorage.getItem('userSentinel');
+            if (storedUser) {
+                const parsedUser = JSON.parse(storedUser);
+                // Mescla os dados limpos evitando perda de XP caso a base corrompa
+                this.user = { xp: parsedUser.xp || 0, dreams: parsedUser.dreams || [], avatar: parsedUser.avatar || null };
+            }
+        } catch (e) {
+            this.user = { xp: 0, dreams: [], avatar: null };
         }
     },
 
