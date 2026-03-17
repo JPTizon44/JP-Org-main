@@ -1,7 +1,7 @@
 const app = {
     currentDate: new Date(),
     data: {}, // { 'YYYY-MM-DD': { lembretes: [], notas: [], avisos: [] } }
-    user: { xp: 0 }, // User Profile settings for Gamification
+    user: { xp: 0, dreams: [] }, // User Profile settings for Gamification
 
     init() {
         this.loadData();
@@ -9,6 +9,7 @@ const app = {
         this.setupSidebar();
         this.checkNotificationStatus();
         this.renderAll();
+        this.renderDreams();
         
         // Setup local alarm checking every 30 seconds
         setInterval(() => this.checkAlarms(), 30000);
@@ -43,20 +44,27 @@ const app = {
         
         const now = new Date();
         const currentDateString = this.getDateString(now);
-        const currentTimeString = now.toTimeString().slice(0, 5); // HH:MM
         
         // Only trigger alarms for 'today' based on the system date
         if (!this.data[currentDateString]) return;
         const todayData = this.data[currentDateString];
         
+        // Current time in minutes since 00:00 to avoid skipping
+        const currentMins = now.getHours() * 60 + now.getMinutes();
+        
         ['lembretes', 'notas', 'avisos'].forEach(cat => {
             const items = todayData[cat];
             items.forEach(item => {
-                // If it has a time, is not done, and the time matches now, and hasn't been notified yet
-                if (item.time && !item.isDone && item.time === currentTimeString && !item.notified) {
-                    this.triggerNotification(cat, item);
-                    item.notified = true; // mark as notified so it doesn't ring every 30 secs
-                    this.saveData();
+                if (item.time && !item.isDone && !item.notified) {
+                    const [h, m] = item.time.split(':').map(Number);
+                    const itemMins = h * 60 + m;
+                    
+                    // Se for hora de tocar (ou já passou a hora hoje) e ainda não tocou
+                    if (currentMins >= itemMins) {
+                        this.triggerNotification(cat, item);
+                        item.notified = true; 
+                        this.saveData();
+                    }
                 }
             });
         });
@@ -120,12 +128,25 @@ const app = {
         this.updateProfileUI();
     },
 
-    // --- Gamification ---
+    // --- Gamification & Ranks ---
+    getRankConfig(level) {
+        if (level < 10) return { title: 'Recruta Sentinel', icon: 'ph-shield' };
+        if (level < 20) return { title: 'Agente Operacional', icon: 'ph-shield-check' };
+        if (level < 30) return { title: 'Especialista Tático', icon: 'ph-target' };
+        if (level < 50) return { title: 'Comandante', icon: 'ph-shield-star' };
+        if (level < 75) return { title: 'Elite Sentinel', icon: 'ph-lightning' };
+        if (level < 100) return { title: 'Mestre Guardião', icon: 'ph-crown' };
+        return { title: 'Lenda Sentinel', icon: 'ph-shooting-star' };
+    },
+
     updateProfileUI() {
         const xp = this.user.xp || 0;
         const level = Math.floor(xp / 100) + 1; // 1 level per 100 XP
         const currentLevelXp = xp % 100;
         const xpRequired = 100; // Target to next level
+        
+        const rank = this.getRankConfig(level);
+        document.querySelector('.user-title').innerHTML = `<i class="ph ${rank.icon}"></i> ${rank.title}`;
 
         const progressPercent = (currentLevelXp / xpRequired) * 100;
 
@@ -136,9 +157,7 @@ const app = {
 
         // Optional: Update text occasionally
         const msgEl = document.getElementById('level-msg');
-        if (level === 1) msgEl.textContent = 'Complete as tarefas de hoje!';
-        else if (level < 5) msgEl.textContent = 'Bom progresso, Agente!';
-        else msgEl.textContent = 'Você é uma lenda, Sentinela!';
+        msgEl.textContent = `Patente: ${rank.title}`;
     },
 
     addXP(amount) {
@@ -148,6 +167,57 @@ const app = {
         this.updateProfileUI();
         
         if (amount > 0) this.showToast(`+${amount} XP ganho!`);
+    },
+
+    // --- Grandes Objetivos de Vida (Mural dos Sonhos) ---
+    promptNewDream() {
+        const text = prompt('Qual é o seu Grande Objetivo de Vida? (Ex: Comprar Casa, Viajar o Mundo, Carro dos Sonhos)');
+        if (text && text.trim()) {
+            if (!this.user.dreams) this.user.dreams = [];
+            const newId = Date.now().toString(36) + Math.random().toString(36).substr(2);
+            this.user.dreams.push({ id: newId, text: text.trim() });
+            this.saveData();
+            this.renderDreams();
+            this.showToast('Objetivo salvo! Mantenha o foco.');
+        }
+    },
+
+    deleteDream(id) {
+        if (confirm('Tem certeza que deseja apagar este grande objetivo?')) {
+            this.user.dreams = this.user.dreams.filter(d => d.id !== id);
+            this.saveData();
+            this.renderDreams();
+        }
+    },
+
+    renderDreams() {
+        const container = document.getElementById('dreams-list');
+        if (!container) return; // fail-safe depending on HTML
+        
+        const dreams = this.user.dreams || [];
+        container.innerHTML = '';
+        
+        if (dreams.length === 0) {
+            container.innerHTML = `<li style="opacity:0.5; font-size:0.8rem; justify-content:center;">Sem objetivos listados</li>`;
+            return;
+        }
+
+        dreams.forEach(dream => {
+            const li = document.createElement('li');
+            li.className = 'dream-item';
+            li.innerHTML = `
+                <i class="ph ph-star"></i>
+                <div class="dream-content">
+                    <div class="dream-text">${this.escapeHTML(dream.text)}</div>
+                </div>
+                <div class="dream-actions">
+                    <button class="icon-btn" style="width:24px;height:24px;font-size:1rem;" onclick="app.deleteDream('${dream.id}')" aria-label="Remover">
+                        <i class="ph ph-trash"></i>
+                    </button>
+                </div>
+            `;
+            container.appendChild(li);
+        });
     },
 
     // --- Persistência (localStorage) ---

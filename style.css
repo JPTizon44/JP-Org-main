@@ -665,6 +665,33 @@ textarea:focus, .time-input:focus {
     color: var(--text-muted);
 }
 
+.dream-item {
+    background: linear-gradient(90deg, rgba(234, 179, 8, 0.1), transparent) !important;
+    border-left: 3px solid #eab308;
+}
+
+.dream-item i {
+    color: #eab308 !important;
+}
+
+.dream-content {
+    flex-grow: 1;
+}
+
+.dream-text {
+    font-weight: 600;
+    color: #fef08a; /* Amarelo suave */
+}
+
+.dream-actions {
+    opacity: 0.5;
+    transition: opacity 0.2s;
+}
+
+.dream-item:hover .dream-actions {
+    opacity: 1;
+}
+
 @media (min-width: 600px) {
     .container {
         max-width: 600px;

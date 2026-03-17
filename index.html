@@ -80,10 +80,19 @@
             </div>
             
             <nav class="sidebar-nav">
-                <div class="nav-section-title">OBJETIVOS</div>
+                <div class="nav-section-title" style="display:flex; justify-content:space-between; align-items:center;">
+                    <span>OBJETIVOS DE VIDA</span>
+                    <button class="icon-btn" style="width:24px;height:24px;font-size:1rem;" onclick="app.promptNewDream()" aria-label="Adicionar Objetivo">
+                        <i class="ph ph-plus"></i>
+                    </button>
+                </div>
+                <ul class="nav-list" id="dreams-list" style="margin-bottom: 24px;">
+                    <!-- Objetivos injetados aqui via JS -->
+                </ul>
+
+                <div class="nav-section-title">GAMIFICAÇÃO</div>
                 <ul class="nav-list">
-                    <li><i class="ph ph-crosshair"></i> Missões Diárias (XP Bônus)</li>
-                    <li><i class="ph ph-medal"></i> Conquistas</li>
+                    <li><i class="ph ph-medal"></i> Suas Conquistas</li>
                     <li><i class="ph ph-chart-line-up"></i> Estatísticas</li>
                 </ul>
             </nav>
