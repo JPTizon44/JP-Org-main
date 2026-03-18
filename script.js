@@ -282,6 +282,12 @@ const app = {
         return { title: 'Lenda Sentinel', icon: 'ph-shooting-star', color: 'rank-diamond' };
     },
 
+    getRank() {
+        const xp = this.user.xp || 0;
+        const level = Math.floor(xp / 100) + 1;
+        return { ...this.getRankConfig(level), level };
+    },
+
     updateProfileUI() {
         const xp = this.user.xp || 0;
         const level = Math.floor(xp / 100) + 1; // 1 level per 100 XP
@@ -763,7 +769,7 @@ const app = {
                 <div class="stat-label">Dias de Operação</div>
             </div>
             <div class="stat-item" style="grid-column: span 2; background: var(--glass-highlight);">
-                <div class="stat-value" style="color: var(--primary); font-size: 1.2rem;">${rank.name}</div>
+                <div class="stat-value" style="color: var(--primary); font-size: 1.2rem;">${rank.title}</div>
                 <div class="stat-label">Patente Atual</div>
             </div>
         `;
