@@ -26,7 +26,7 @@
 body {
     font-family: 'Inter', sans-serif;
     background-color: #030a05;
-    background-image: url('background.jpg.png');
+    background-image: linear-gradient(rgba(3, 10, 5, 0.75), rgba(3, 10, 5, 0.85)), url('bg-sentinel.jpg');
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
@@ -54,8 +54,15 @@ body {
     font-size: 1.25rem;
     font-weight: 700;
     text-align: center;
-    margin-bottom: 16px;
     color: var(--text-main);
+}
+
+.header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    position: relative;
 }
 
 .calendar-nav {
@@ -474,6 +481,250 @@ textarea:focus, .time-input:focus {
     opacity: 1;
 }
 
+/* --- Sidebar Menu & Gamification --- */
+.sidebar-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px);
+    z-index: 998;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.sidebar-backdrop.active {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: -300px; /* Hidden by default */
+    width: 280px;
+    height: 100%;
+    background: var(--card-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-right: 1px solid rgba(34, 197, 94, 0.2);
+    z-index: 999;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.5);
+}
+
+.sidebar.active {
+    transform: translateX(300px); /* 280px width + 20px overlap fix */
+}
+
+.sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.user-profile {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.avatar {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, var(--primary), #059669);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+    overflow: hidden; /* so the image is clipped round */
+    position: relative;
+    transition: transform 0.2s;
+}
+
+.avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.avatar-wrapper:hover .avatar {
+    transform: scale(1.05);
+}
+
+.user-info h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.user-title {
+    font-size: 0.8rem;
+    color: var(--primary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+}
+
+.rank-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.6rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: white;
+}
+
+/* Rank Color Tiers */
+.rank-bronze { background: linear-gradient(135deg, #b87333, #8a5a19); box-shadow: 0 0 5px rgba(184, 115, 51, 0.5); }
+.rank-silver { background: linear-gradient(135deg, #c0c0c0, #717171); box-shadow: 0 0 5px rgba(192, 192, 192, 0.5); }
+.rank-gold   { background: linear-gradient(135deg, #ffd700, #b8860b); box-shadow: 0 0 5px rgba(255, 215, 0, 0.5); text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+.rank-platinum { background: linear-gradient(135deg, #e5e4e2, #7eb9e6); box-shadow: 0 0 8px rgba(126, 185, 230, 0.6); color: #0f172a;}
+.rank-diamond { background: linear-gradient(135deg, #b9f2ff, #2563eb); box-shadow: 0 0 10px rgba(37, 99, 235, 0.8); }
+
+.sidebar-content {
+    padding: 24px 20px;
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+/* Gamification / Level Card */
+.level-card {
+    background: rgba(10, 15, 10, 0.5);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 24px;
+}
+
+.level-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.level-text {
+    font-size: 1.1rem;
+    color: var(--text-main);
+}
+
+.level-text strong {
+    color: var(--primary);
+    font-size: 1.3rem;
+}
+
+.xp-text {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.progress-bar-bg {
+    width: 100%;
+    height: 8px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 100px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #10b981, var(--primary));
+    border-radius: 100px;
+    box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.level-msg {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-align: center;
+    margin-top: 8px;
+}
+
+/* Sidebar Navigation Elements Placeholder */
+.sidebar-nav {
+    margin-top: 24px;
+}
+
+.nav-section-title {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+}
+
+.nav-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.nav-list li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 12px;
+    color: var(--text-main);
+    cursor: pointer;
+    transition: background 0.2s;
+    font-size: 0.95rem;
+}
+
+.nav-list li:hover {
+    background: rgba(255,255,255,0.05);
+}
+
+.nav-list li i {
+    font-size: 1.25rem;
+    color: var(--text-muted);
+}
+
+.dream-item {
+    background: linear-gradient(90deg, rgba(234, 179, 8, 0.1), transparent) !important;
+    border-left: 3px solid #eab308;
+}
+
+.dream-item i {
+    color: #eab308 !important;
+}
+
+.dream-content {
+    flex-grow: 1;
+}
+
+.dream-text {
+    font-weight: 600;
+    color: #fef08a; /* Amarelo suave */
+}
+
+.dream-actions {
+    opacity: 0.5;
+    transition: opacity 0.2s;
+}
+
+.dream-item:hover .dream-actions {
+    opacity: 1;
+}
+
 @media (min-width: 600px) {
     .container {
         max-width: 600px;
@@ -489,4 +740,46 @@ textarea:focus, .time-input:focus {
     .modal.active .modal-content {
         transform: scale(1);
     }
+}
+
+/* =========================================================================
+   SESSÃO 8: TELA DE LOGIN OVERLAY (FIREBASE AUTH)
+   ========================================================================= */
+
+.login-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(10, 15, 20, 0.98);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    z-index: 9999; /* Fica acima de tudo, inclusive modais e sidebars */
+    display: none;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.login-overlay.active {
+    display: flex;
+    animation: fadeIn 0.4s ease-out;
+}
+
+.login-card {
+    background: rgba(20, 25, 30, 0.8);
+    border: 1px solid rgba(0, 255, 170, 0.3);
+    border-radius: 20px;
+    padding: 40px 30px;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8), inset 0 0 30px rgba(0, 255, 170, 0.05);
+    display: flex;
+    flex-direction: column;
+}
+
+/* Garantir que inputs de Auth fiquem limpos */
+.login-card .input-group {
+    margin-bottom: 20px;
 }

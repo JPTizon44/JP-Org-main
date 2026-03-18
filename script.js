@@ -1,15 +1,129 @@
+// Initialize Firebase (Compat)
+if (!firebase.apps.length) {
+    firebase.initializeApp({
+      apiKey: "AIzaSyAYYZF7RDi1qcH9y4i47bsNVCpjvPgXlsE",
+      authDomain: "sentinel-22ad5.firebaseapp.com",
+      projectId: "sentinel-22ad5",
+      storageBucket: "sentinel-22ad5.firebasestorage.app",
+      messagingSenderId: "910901030196",
+      appId: "1:910901030196:web:67b3ec4470ac0302fc8961"
+    });
+}
+const db = firebase.database();
+const auth = firebase.auth();
+
 const app = {
+    userId: null,
     currentDate: new Date(),
     data: {}, // { 'YYYY-MM-DD': { lembretes: [], notas: [], avisos: [] } }
+    user: { xp: 0, dreams: [], avatar: null }, // User Profile settings for Gamification
+    cropperInfo: { instance: null }, // Stores Cropper instance
 
     init() {
-        this.loadData();
+        this.setupAuthListener();
         this.setupCalendar();
+        this.setupSidebar();
         this.checkNotificationStatus();
-        this.renderAll();
         
         // Setup local alarm checking every 30 seconds
         setInterval(() => this.checkAlarms(), 30000);
+    },
+
+    setupAuthListener() {
+        // Escuta ativamente no background se o token da Google Cloud está logado
+        auth.onAuthStateChanged((user) => {
+            const loginOverlay = document.getElementById('login-overlay');
+            if (user) {
+                this.userId = user.uid;
+                if(loginOverlay) loginOverlay.classList.remove('active');
+                
+                // Mágica: Puxa 100% dos dados direto da nuvem ao logar
+                this.loadData();
+            } else {
+                this.userId = null;
+                if(loginOverlay) loginOverlay.classList.add('active');
+                
+                // Limpa a tela se for deslogado
+                this.data = {};
+                this.user = { xp: 0, dreams: [], avatar: null };
+                this.renderAll();
+                this.renderDreams();
+                this.updateProfileUI();
+            }
+        });
+    },
+
+    handleAuth(event) {
+        event.preventDefault();
+        const email = document.getElementById('auth-email').value;
+        const password = document.getElementById('auth-password').value;
+        const errorMsg = document.getElementById('auth-error-msg');
+        
+        errorMsg.style.display = 'none';
+        const submitBtn = document.getElementById('btn-login-submit');
+        submitBtn.textContent = 'Autenticando...';
+        submitBtn.disabled = true;
+        
+        auth.signInWithEmailAndPassword(email, password)
+            .then((userCredential) => {
+                submitBtn.textContent = 'Entrar no Sistema';
+                submitBtn.disabled = false;
+                // onAuthStateChanged faz o resto
+            })
+            .catch((error) => {
+                submitBtn.textContent = 'Entrar no Sistema';
+                submitBtn.disabled = false;
+                errorMsg.textContent = 'Conta não existe ou senha incorreta!';
+                errorMsg.style.display = 'block';
+            });
+    },
+
+    handleCreateAccount() {
+        const email = document.getElementById('auth-email').value;
+        const password = document.getElementById('auth-password').value;
+        const errorMsg = document.getElementById('auth-error-msg');
+        
+        if (!email || !password) {
+            errorMsg.textContent = 'Preencha E-mail e Senha no painel para criar uma conta.';
+            errorMsg.style.display = 'block';
+            return;
+        }
+        
+        errorMsg.style.display = 'none';
+        const submitBtn = document.getElementById('btn-login-submit');
+        submitBtn.textContent = 'Criando Arquivo...';
+        
+        auth.createUserWithEmailAndPassword(email, password)
+            .then((userCredential) => {
+                submitBtn.textContent = 'Entrar no Sistema';
+                // Criação do Documento zerado no Banco de Dados
+                db.ref('users/' + userCredential.user.uid).set({
+                    data: {},
+                    profile: { xp: 0, dreams: [], avatar: null }
+                }).then(() => {
+                    this.showToast('Conta Criada com Sucesso no Firebase!');
+                });
+            })
+            .catch((error) => {
+                submitBtn.textContent = 'Entrar no Sistema';
+                if(error.code === 'auth/weak-password') {
+                    errorMsg.textContent = 'A Senha deve ter no mínimo 6 letras.';
+                } else if(error.code === 'auth/email-already-in-use') {
+                    errorMsg.textContent = 'E-mail Ocupado. Tente clicar em Entrar ou use outro.';
+                } else {
+                    errorMsg.textContent = 'Erro ao Criar: ' + error.message;
+                }
+                errorMsg.style.display = 'block';
+            });
+    },
+
+    signOut() {
+        auth.signOut().then(() => {
+            const sidebar = document.getElementById('sidebar-menu');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            if(sidebar) sidebar.classList.remove('active');
+            if(backdrop) backdrop.classList.remove('active');
+        });
     },
 
     // --- Notificações ---
@@ -41,20 +155,27 @@ const app = {
         
         const now = new Date();
         const currentDateString = this.getDateString(now);
-        const currentTimeString = now.toTimeString().slice(0, 5); // HH:MM
         
         // Only trigger alarms for 'today' based on the system date
         if (!this.data[currentDateString]) return;
         const todayData = this.data[currentDateString];
         
+        // Current time in minutes since 00:00 to avoid skipping
+        const currentMins = now.getHours() * 60 + now.getMinutes();
+        
         ['lembretes', 'notas', 'avisos'].forEach(cat => {
             const items = todayData[cat];
             items.forEach(item => {
-                // If it has a time, is not done, and the time matches now, and hasn't been notified yet
-                if (item.time && !item.isDone && item.time === currentTimeString && !item.notified) {
-                    this.triggerNotification(cat, item);
-                    item.notified = true; // mark as notified so it doesn't ring every 30 secs
-                    this.saveData();
+                if (item.time && !item.isDone && !item.notified) {
+                    const [h, m] = item.time.split(':').map(Number);
+                    const itemMins = h * 60 + m;
+                    
+                    // Se for hora de tocar (ou já passou a hora hoje) e ainda não tocou
+                    if (currentMins >= itemMins) {
+                        this.triggerNotification(cat, item);
+                        item.notified = true; 
+                        this.saveData();
+                    }
                 }
             });
         });
@@ -74,23 +195,310 @@ const app = {
 
         if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
             navigator.serviceWorker.ready.then(registration => {
-                registration.showNotification(`${iconHtml} JP SENTINEL`, options);
+                registration.showNotification(`${iconHtml} SENTINEL`, options);
             });
         } else {
-            new Notification(`${iconHtml} JP SENTINEL`, options);
+            new Notification(`${iconHtml} SENTINEL`, options);
         }
     },
 
-    // --- Persistência (localStorage) ---
-    loadData() {
-        const stored = localStorage.getItem('daySyncData');
-        if (stored) {
-            this.data = JSON.parse(stored);
+    // --- Sidebar (Menu Hambúrguer) ---
+    setupSidebar() {
+        const btnMenu = document.getElementById('btn-menu');
+        const btnClose = document.getElementById('btn-close-menu');
+        const sidebar = document.getElementById('sidebar-menu');
+        const backdrop = document.getElementById('sidebar-backdrop');
+        
+        // Anti-crash Guard for corrupted cached HTMLs
+        if (!btnMenu || !btnClose || !sidebar || !backdrop) return;
+        
+        const openSidebar = () => {
+            sidebar.classList.add('active');
+            backdrop.classList.add('active');
+        };
+        
+        const closeSidebar = () => {
+            sidebar.classList.remove('active');
+            backdrop.classList.remove('active');
+        };
+
+        btnMenu.addEventListener('click', openSidebar);
+        btnClose.addEventListener('click', closeSidebar);
+        backdrop.addEventListener('click', closeSidebar);
+        
+        // Touch Swipe to close (mobile friendly)
+        let touchStartX = 0;
+        let touchEndX = 0;
+        
+        sidebar.addEventListener('touchstart', e => {
+            touchStartX = e.changedTouches[0].screenX;
+        }, {passive: true});
+        
+        sidebar.addEventListener('touchend', e => {
+            touchEndX = e.changedTouches[0].screenX;
+            if (touchEndX < touchStartX - 50) closeSidebar(); // Swiped left
+        }, {passive: true});
+        
+        this.updateProfileUI();
+    },
+
+    // --- Gamification & Ranks ---
+    getRankConfig(level) {
+        if (level < 10) return { title: 'Recruta Sentinel', icon: 'ph-shield', color: 'rank-bronze' };
+        if (level < 20) return { title: 'Agente Operacional', icon: 'ph-shield-check', color: 'rank-silver' };
+        if (level < 30) return { title: 'Especialista Tático', icon: 'ph-target', color: 'rank-gold' };
+        if (level < 50) return { title: 'Comandante', icon: 'ph-shield-star', color: 'rank-platinum' };
+        if (level < 75) return { title: 'Elite Sentinel', icon: 'ph-lightning', color: 'rank-diamond' };
+        if (level < 100) return { title: 'Mestre Guardião', icon: 'ph-crown', color: 'rank-diamond' };
+        return { title: 'Lenda Sentinel', icon: 'ph-shooting-star', color: 'rank-diamond' };
+    },
+
+    updateProfileUI() {
+        const xp = this.user.xp || 0;
+        const level = Math.floor(xp / 100) + 1; // 1 level per 100 XP
+        const currentLevelXp = xp % 100;
+        const xpRequired = 100; // Target to next level
+        
+        const rank = this.getRankConfig(level);
+        
+        const userTitleEl = document.querySelector('.user-title');
+        if (userTitleEl) userTitleEl.innerHTML = `<i class="ph ${rank.icon}"></i> ${rank.title}`;
+        
+        // Update Small Badge
+        const badge = document.getElementById('rank-badge');
+        if (badge) {
+            badge.className = `rank-badge ${rank.color}`;
+            badge.innerHTML = `<i class="ph ${rank.icon}"></i> Lv${level}`;
         }
+
+        // Update Avatar Image if exists
+        const avatarContainer = document.getElementById('user-avatar-base');
+        if (avatarContainer) {
+            if (this.user.avatar) {
+                avatarContainer.innerHTML = `<img src="${this.user.avatar}" alt="Avatar">`;
+            } else {
+                avatarContainer.innerHTML = `<i class="ph ph-user"></i>`;
+            }
+        }
+
+        const progressPercent = (currentLevelXp / xpRequired) * 100;
+
+        const levelEl = document.getElementById('user-level');
+        const xpEl = document.getElementById('user-xp');
+        const targetEl = document.getElementById('xp-target');
+        const progressEl = document.getElementById('level-progress-fill');
+        
+        if (levelEl) levelEl.textContent = level;
+        if (xpEl) xpEl.textContent = xp;
+        if (targetEl) targetEl.textContent = xpRequired * level;
+        if (progressEl) progressEl.style.width = `${progressPercent}%`;
+
+        // Optional: Update text occasionally
+        const msgEl = document.getElementById('level-msg');
+        if (msgEl) msgEl.textContent = `Patente: ${rank.title}`;
+    },
+
+    changeAvatar(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        // Não há mais limite de tamanho rígido no input inicial (já que será comprimido a seguir)
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            app.openCropModal(e.target.result);
+        };
+        reader.readAsDataURL(file);
+        
+        // Reset file input para permitir pegar a mesma foto denovo se cancelado
+        event.target.value = '';
+    },
+
+    openCropModal(imageSrc) {
+        const cropModal = document.getElementById('crop-modal');
+        const imageObj = document.getElementById('crop-image');
+        
+        if (!cropModal || !imageObj) return; // Guard against broken HTML
+        
+        cropModal.classList.add('active');
+        imageObj.src = imageSrc;
+        
+        // If an old instance exists, destroy it.
+        if (this.cropperInfo.instance) {
+            this.cropperInfo.instance.destroy();
+        }
+        
+        // Initialize Cropper API
+        this.cropperInfo.instance = new Cropper(imageObj, {
+            aspectRatio: 1, // Fixa para corte 1:1 quadrado (perfeito pra avatar)
+            viewMode: 1,
+            dragMode: 'move', // Puxar na tela movimenta a foto
+            autoCropArea: 0.9,
+            restore: false,
+            guides: false,
+            center: true,
+            highlight: false,
+            cropBoxMovable: false,
+            cropBoxResizable: false, // Caixa fixa no centro
+            toggleDragModeOnDblclick: false
+        });
+    },
+
+    closeCropModal() {
+        const cropModal = document.getElementById('crop-modal');
+        if (cropModal) cropModal.classList.remove('active');
+        
+        if (this.cropperInfo.instance) {
+            this.cropperInfo.instance.destroy();
+            this.cropperInfo.instance = null;
+        }
+    },
+
+    applyCrop() {
+        if (!this.cropperInfo.instance) return;
+
+        // Extrai a imagem final formatada e comprimida pra 150x150 JPEG (reduz o 2MB pra meros ~15KBs)
+        const canvas = this.cropperInfo.instance.getCroppedCanvas({
+            width: 200,
+            height: 200,
+            imageSmoothingEnabled: true,
+            imageSmoothingQuality: 'high',
+        });
+
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.85); // Compressão Jpeg de 85%
+
+        this.user.avatar = compressedBase64;
+        this.saveData();
+        this.updateProfileUI();
+        this.showToast('Foto do perfil linda salva!');
+        
+        this.closeCropModal();
+    },
+
+    addXP(amount) {
+        // Increment avoiding negatives
+        this.user.xp = Math.max(0, this.user.xp + amount);
+        this.saveData();
+        this.updateProfileUI();
+        
+        if (amount > 0) this.showToast(`+${amount} XP ganho!`);
+    },
+
+    // --- Grandes Objetivos de Vida (Mural dos Sonhos) ---
+    promptNewDream() {
+        const dreamText = document.getElementById('dream-text');
+        const dreamModal = document.getElementById('dream-modal');
+        
+        if (!dreamText || !dreamModal) return; // Guard clause
+        
+        dreamText.value = '';
+        dreamModal.classList.add('active');
+        setTimeout(() => dreamText.focus(), 100);
+    },
+
+    closeDreamModal() {
+        const dreamModal = document.getElementById('dream-modal');
+        if (dreamModal) dreamModal.classList.remove('active');
+    },
+
+    saveDream() {
+        const textObj = document.getElementById('dream-text');
+        if (!textObj) return;
+        
+        const text = textObj.value;
+        if (text && text.trim()) {
+            if (!this.user.dreams) this.user.dreams = [];
+            const newId = Date.now().toString(36) + Math.random().toString(36).substr(2);
+            this.user.dreams.push({ id: newId, text: text.trim() });
+            this.saveData();
+            this.renderDreams();
+            this.showToast('Objetivo salvo! Mantenha o foco.');
+            this.closeDreamModal();
+        }
+    },
+
+    deleteDream(id) {
+        if (confirm('Tem certeza que deseja apagar este grande objetivo?')) {
+            this.user.dreams = this.user.dreams.filter(d => d.id !== id);
+            this.saveData();
+            this.renderDreams();
+        }
+    },
+
+    renderDreams() {
+        const container = document.getElementById('dreams-list');
+        if (!container) return; // fail-safe depending on HTML
+        
+        const dreams = Array.isArray(this.user.dreams) ? this.user.dreams : [];
+        container.innerHTML = '';
+        
+        if (dreams.length === 0) {
+            container.innerHTML = `<li style="opacity:0.5; font-size:0.8rem; justify-content:center;">Sem objetivos listados</li>`;
+            return;
+        }
+
+        dreams.forEach(dream => {
+            const li = document.createElement('li');
+            li.className = 'dream-item';
+            li.innerHTML = `
+                <i class="ph ph-star"></i>
+                <div class="dream-content">
+                    <div class="dream-text">${this.escapeHTML(dream.text)}</div>
+                </div>
+                <div class="dream-actions">
+                    <button class="icon-btn" style="width:24px;height:24px;font-size:1rem;" onclick="app.deleteDream('${dream.id}')" aria-label="Remover">
+                        <i class="ph ph-trash"></i>
+                    </button>
+                </div>
+            `;
+            container.appendChild(li);
+        });
+    },
+
+    // --- Persistência (FIREBASE SAAS) ---
+    loadData() {
+        if (!this.userId) return; // Segurança
+        
+        this.showToast('Sincronizando Banco de Dados...');
+        
+        db.ref('users/' + this.userId).once('value').then((snapshot) => {
+            if (snapshot.exists()) {
+                const dbData = snapshot.val();
+                this.data = dbData.data || {};
+                
+                const profile = dbData.profile || {};
+                this.user = { 
+                    xp: profile.xp || 0, 
+                    dreams: Array.isArray(profile.dreams) ? profile.dreams : [], 
+                    avatar: profile.avatar || null 
+                };
+            } else {
+                this.data = {};
+                this.user = { xp: 0, dreams: [], avatar: null };
+            }
+            
+            // Depois do Download finalizado, pinta a tela com os dados da Nuvem
+            this.renderAll();
+            this.renderDreams();
+            this.updateProfileUI();
+        }).catch((error) => {
+            console.error("Erro carregando dados do Firestore:", error);
+            this.showToast('Erro de Conexão. Modo Offline Limite.');
+        });
     },
 
     saveData() {
-        localStorage.setItem('daySyncData', JSON.stringify(this.data));
+        if (!this.userId) return;
+        
+        db.ref('users/' + this.userId).update({
+            data: this.data,
+            profile: this.user
+        }).catch((error) => {
+            // Conta nova sem arquivo? Força criação set()
+            db.ref('users/' + this.userId).set({
+                data: this.data,
+                profile: this.user
+            });
+        });
     },
 
     // --- Calendário e Datas ---
@@ -311,6 +719,16 @@ const app = {
         const item = dailyData[category].find(i => i.id === id);
         if (item) {
             item.isDone = !item.isDone;
+            
+            // Gamification Rewards
+            if (item.isDone) {
+                const reward = item.priority === 'emergencia' ? 15 : item.priority === 'neutro' ? 10 : 5;
+                this.addXP(reward);
+            } else {
+                const penalty = item.priority === 'emergencia' ? -15 : item.priority === 'neutro' ? -10 : -5;
+                this.addXP(penalty); // Penalty for undoing
+            }
+            
             this.saveData();
             this.renderAll();
         }

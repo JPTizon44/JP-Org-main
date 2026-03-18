@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>JP SENTINEL</title>
+    <title>SENTINEL</title>
     <!-- Favicon and PWA setup -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#f0f2f5">
@@ -15,14 +15,55 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Phosphor Icons (Modern, Clean Icons) -->
+    <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <!-- Cropper.js for Image Cropping -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
 
-    <link rel="stylesheet" href="style.css">
+    <!-- Firebase SDK (Compat Version para simplificar injecão global sem converte app para module) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
+
+    <link rel="stylesheet" href="style.css?v=8">
 </head>
 <body>
+    <!-- Tela de Autenticação / Bloqueio -->
+    <div id="login-overlay" class="login-overlay active">
+        <div class="login-card">
+            <h1 class="app-title" style="font-size: 2.5rem; margin-bottom: 0.5rem; text-align: center;">SENTINEL</h1>
+            <p style="color: var(--text-secondary); margin-bottom: 2rem; text-align: center;">Identificação Necessária</p>
+            
+            <form id="login-form" onsubmit="app.handleAuth(event)">
+                <div class="input-group">
+                    <label for="auth-email">E-mail Operacional</label>
+                    <input type="email" id="auth-email" required placeholder="agente@sentinel.com">
+                </div>
+                <div class="input-group">
+                    <label for="auth-password">Senha de Acesso</label>
+                    <input type="password" id="auth-password" required placeholder="••••••••">
+                </div>
+                
+                <div id="auth-error-msg" style="color: var(--color-emergencia); font-size: 0.85rem; margin-bottom: 1rem; text-align: center; display: none;">Erro genérico</div>
+
+                <div class="modal-footer" style="flex-direction: column; gap: 10px; margin-top: 20px;">
+                    <button type="submit" class="btn-save" style="width: 100%;" id="btn-login-submit">Entrar no Sistema</button>
+                    <button type="button" class="btn-cancel" style="width: 100%;" onclick="app.handleCreateAccount()">Criar Nova Credencial</button>
+                </div>
+            </form>
+        </div>
+    </div>
     <header class="header">
-        <h1 class="app-title">JP SENTINEL</h1>
+        <div class="header-top">
+            <button id="btn-menu" class="icon-btn" aria-label="Abrir Menu">
+                <i class="ph ph-list"></i>
+            </button>
+            <h1 class="app-title">SENTINEL</h1>
+            <!-- Space filler to center the title -->
+            <div style="width: 40px;"></div>
+        </div>
         <div class="calendar-nav">
             <button id="prev-day-btn" class="icon-btn" aria-label="Dia anterior">
                 <i class="ph ph-caret-left"></i>
@@ -41,6 +82,72 @@
             <i class="ph ph-bell-ringing"></i>
         </button>
     </header>
+
+    <!-- Menu Lateral (Sidebar) -->
+    <div id="sidebar-backdrop" class="sidebar-backdrop"></div>
+    <aside id="sidebar-menu" class="sidebar">
+        <div class="sidebar-header">
+            <div class="user-profile">
+                <!-- Avatar clicável file upload -->
+                <input type="file" id="avatar-upload" accept="image/*" style="display:none;" onchange="app.changeAvatar(event)">
+                <label for="avatar-upload" class="avatar-wrapper" aria-label="Mudar foto de perfil" style="position:relative; cursor:pointer;">
+                    <div class="avatar" id="user-avatar-base">
+                        <i class="ph ph-user"></i>
+                    </div>
+                </label>
+                
+                <div class="user-info">
+                    <h3>Usuário</h3>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <span class="user-title"><i class="ph ph-shield"></i> Recruta Sentinel</span>
+                        <!-- Extra small badge for visual impact -->
+                        <span id="rank-badge" class="rank-badge rank-bronze"></span>
+                    </div>
+                </div>
+            </div>
+            <button id="btn-close-menu" class="icon-btn" aria-label="Fechar Menu">
+                <i class="ph ph-x"></i>
+            </button>
+        </div>
+        
+        <div class="sidebar-content">
+            <div class="level-card">
+                <div class="level-header">
+                    <span class="level-text">Nível <strong id="user-level">1</strong></span>
+                    <span class="xp-text"><span id="user-xp">0</span> / <span id="xp-target">100</span> XP</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div id="level-progress-fill" class="progress-bar-fill" style="width: 0%;"></div>
+                </div>
+                <p class="level-msg" id="level-msg">Complete tarefas para subir de nível!</p>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <div class="nav-section-title" style="display:flex; justify-content:space-between; align-items:center;">
+                    <span>OBJETIVOS DE VIDA</span>
+                    <button class="icon-btn" style="width:24px;height:24px;font-size:1rem;" onclick="app.promptNewDream()" aria-label="Adicionar Objetivo">
+                        <i class="ph ph-plus"></i>
+                    </button>
+                </div>
+                <ul class="nav-list" id="dreams-list" style="margin-bottom: 24px;">
+                    <!-- Objetivos injetados aqui via JS -->
+                </ul>
+
+                <div class="nav-section-title">GAMIFICAÇÃO</div>
+                <ul class="nav-list">
+                    <li><i class="ph ph-medal"></i> Suas Conquistas</li>
+                    <li><i class="ph ph-chart-line-up"></i> Estatísticas</li>
+                </ul>
+
+                <div class="nav-section-title" style="margin-top: 24px;">SISTEMA</div>
+                <ul class="nav-list">
+                    <li onclick="app.signOut()" style="color: var(--color-emergencia); cursor: pointer;">
+                        <i class="ph ph-sign-out"></i> Desconectar
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </aside>
 
     <main class="container">
         <!-- Section: Lembretes -->
@@ -141,15 +248,57 @@
         </div>
     </div>
 
+    <!-- Modal de Crop de Imagem -->
+    <div id="crop-modal" class="modal" style="z-index: 1050;">
+        <div class="modal-content" style="background:var(--bg-color); max-width: 400px; padding: 16px;">
+            <div class="modal-header" style="margin-bottom: 12px;">
+                <h3>Ajustar Foto</h3>
+                <button class="close-btn" onclick="app.closeCropModal()" aria-label="Cancelar">
+                    <i class="ph ph-x"></i>
+                </button>
+            </div>
+            <div style="width: 100%; max-height: 300px; background: #000; overflow: hidden; display: flex; justify-content: center; align-items: center; border-radius: 12px; margin-bottom: 16px;">
+                <img id="crop-image" src="" style="max-width: 100%; display: block;">
+            </div>
+            <div class="modal-footer" style="margin-top: 0;">
+                <button type="button" class="btn-cancel" onclick="app.closeCropModal()">Cancelar</button>
+                <button type="button" class="btn-save" onclick="app.applyCrop()">Cortar e Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Objetivos de Vida -->
+    <div id="dream-modal" class="modal" style="z-index: 1060;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Novo Objetivo de Vida</h3>
+                <button class="close-btn" onclick="app.closeDreamModal()" aria-label="Fechar">
+                    <i class="ph ph-x"></i>
+                </button>
+            </div>
+            <div class="input-group">
+                <label for="dream-text">Qual o seu grande objetivo?</label>
+                <textarea id="dream-text" rows="2" placeholder="Ex: Comprar um carro, Viajar o mundo..." required></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-cancel" onclick="app.closeDreamModal()">Cancelar</button>
+                <button type="button" class="btn-save" onclick="app.saveDream()">Salvar</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Notification -->
     <div id="toast" class="toast">Trabalho salvo com sucesso!</div>
 
-    <script src="script.js"></script>
+    <script src="script.js?v=8"></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
-                    .then(registration => console.log('SW registered'))
+                navigator.serviceWorker.register('sw.js?v=8')
+                    .then(registration => {
+                        console.log('SW registered');
+                        registration.update(); // Force background update of the SW
+                    })
                     .catch(error => console.log('SW registration failed'));
             });
         }

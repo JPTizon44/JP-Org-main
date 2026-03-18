@@ -1,4 +1,4 @@
-const CACHE_NAME = 'daysync-v2';
+const CACHE_NAME = 'daysync-v5';
 const ASSETS = [
     './',
     './index.html',
@@ -33,26 +33,37 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
     // Only cache GET requests
     if (event.request.method !== 'GET') return;
+    
+    // Skip external APIs/Analytics completely if any
+    if(event.request.url.includes('google-analytics')) return;
 
     event.respondWith(
-        caches.match(event.request)
-            .then(response => {
-                // Return cached version or fetch from network
-                return response || fetch(event.request).then(fetchRes => {
-                    // Caching dynamically fetched assets (like font files loaded from the css)
-                    return caches.open(CACHE_NAME).then(cache => {
-                        // Don't cache API or external unhandled scripts
-                        if(event.request.url.startsWith('http')){
-                             cache.put(event.request, fetchRes.clone());
-                        }
-                        return fetchRes;
-                    });
-                });
-            }).catch(() => {
-                // Return fallback if offline and not in cache
-                if (event.request.headers.get('accept').includes('text/html')) {
-                    return caches.match('/index.html');
+        // NETWORK FIRST STRATEGY (Ideal for active development apps)
+        fetch(event.request).then(networkResponse => {
+            // Check if we received a valid response
+            if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
+                return networkResponse;
+            }
+
+            // Clone the response and update the cache dynamically in the background
+            const responseToCache = networkResponse.clone();
+            caches.open(CACHE_NAME).then(cache => {
+                cache.put(event.request, responseToCache);
+            });
+
+            return networkResponse;
+        }).catch(() => {
+            // IF NETWORK FAILS (Offline mode), fallback to cache
+            return caches.match(event.request).then(cachedResponse => {
+                if (cachedResponse) {
+                    return cachedResponse;
                 }
-            })
+                
+                // If it's a page request and not in cache, fallback to index
+                if (event.request.headers.get('accept').includes('text/html')) {
+                    return caches.match('./index.html');
+                }
+            });
+        })
     );
 });
