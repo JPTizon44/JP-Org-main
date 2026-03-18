@@ -748,31 +748,41 @@ const app = {
         const content = document.getElementById('stats-content');
         if (!content) return;
 
-        const history = Object.values(this.user.history || {});
-        const totalDone = history.reduce((acc, curr) => acc + (curr.done || 0), 0);
-        const totalCreated = history.reduce((acc, curr) => acc + (curr.total || 0), 0);
-        const successRate = totalCreated > 0 ? Math.round((totalDone / totalCreated) * 100) : 0;
-        const daysActive = history.length;
-        const rank = this.getRank();
+        try {
+            const historyObj = this.user.history || {};
+            const history = Object.values(historyObj);
+            
+            const totalDone = history.reduce((acc, curr) => acc + (curr.done || 0), 0);
+            const totalCreated = history.reduce((acc, curr) => acc + (curr.total || 0), 0);
+            const successRate = totalCreated > 0 ? Math.round((totalDone / totalCreated) * 100) : 0;
+            const daysActive = history.length;
+            
+            const rank = this.getRank() || { title: 'Agente', icon: 'ph-shield' };
 
-        content.innerHTML = `
-            <div class="stat-item">
-                <div class="stat-value">${totalDone}</div>
-                <div class="stat-label">Tarefas Concluídas</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value">${successRate}%</div>
-                <div class="stat-label">Taxa de Sucesso Geral</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value">${daysActive}</div>
-                <div class="stat-label">Dias de Operação</div>
-            </div>
-            <div class="stat-item" style="grid-column: span 2; background: var(--glass-highlight);">
-                <div class="stat-value" style="color: var(--primary); font-size: 1.2rem;">${rank.title}</div>
-                <div class="stat-label">Patente Atual</div>
-            </div>
-        `;
+            content.innerHTML = `
+                <div class="stat-item">
+                    <div class="stat-value">${totalDone}</div>
+                    <div class="stat-label">Tarefas Concluídas</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${successRate}%</div>
+                    <div class="stat-label">Sucesso Geral</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${daysActive}</div>
+                    <div class="stat-label">Dias Ativos</div>
+                </div>
+                <div class="stat-item" style="grid-column: span 2; background: rgba(34, 197, 94, 0.1);">
+                    <div class="stat-value" style="color: var(--primary); font-size: 1.1rem;">${rank.title || 'Agente'}</div>
+                    <div class="stat-label">Patente Sentinel</div>
+                </div>
+            `;
+        } catch (err) {
+            console.error("Erro ao renderizar estatísticas:", err);
+            content.innerHTML = `<div style="grid-column: span 2; padding: 20px; text-align: center; opacity: 0.7;">
+                Relatório em andamento... complete mais tarefas para gerar dados!
+            </div>`;
+        }
     },
 
     // --- Core Logic ---
