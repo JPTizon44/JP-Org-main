@@ -453,6 +453,187 @@ const app = {
             container.appendChild(li);
         });
     },
+        const avatarContainer = document.getElementById('user-avatar-base');
+        if (avatarContainer) {
+            if (this.user.avatar) {
+                avatarContainer.innerHTML = `<img src="${this.user.avatar}" alt="Avatar">`;
+            } else {
+                avatarContainer.innerHTML = `<i class="ph ph-user"></i>`;
+            }
+        }
+
+        const progressPercent = (currentLevelXp / xpRequired) * 100;
+
+        const levelEl = document.getElementById('user-level');
+        const xpEl = document.getElementById('user-xp');
+        const targetEl = document.getElementById('xp-target');
+        const progressEl = document.getElementById('level-progress-fill');
+        
+        if (levelEl) levelEl.textContent = level;
+        if (xpEl) xpEl.textContent = xp;
+        if (targetEl) targetEl.textContent = xpRequired * level;
+        if (progressEl) progressEl.style.width = `${progressPercent}%`;
+
+        // Optional: Update text occasionally
+        const msgEl = document.getElementById('level-msg');
+        if (msgEl) msgEl.textContent = `Patente: ${rank.title}`;
+    },
+
+    changeAvatar(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        // Não há mais limite de tamanho rígido no input inicial (já que será comprimido a seguir)
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            app.openCropModal(e.target.result);
+        };
+        reader.readAsDataURL(file);
+        
+        // Reset file input para permitir pegar a mesma foto denovo se cancelado
+        event.target.value = '';
+    },
+
+    openCropModal(imageSrc) {
+        const cropModal = document.getElementById('crop-modal');
+        const imageObj = document.getElementById('crop-image');
+        
+        if (!cropModal || !imageObj) return; // Guard against broken HTML
+        
+        cropModal.classList.add('active');
+        imageObj.src = imageSrc;
+        
+        // If an old instance exists, destroy it.
+        if (this.cropperInfo.instance) {
+            this.cropperInfo.instance.destroy();
+        }
+        
+        // Initialize Cropper API
+        this.cropperInfo.instance = new Cropper(imageObj, {
+            aspectRatio: 1, // Fixa para corte 1:1 quadrado (perfeito pra avatar)
+            viewMode: 1,
+            dragMode: 'move', // Puxar na tela movimenta a foto
+            autoCropArea: 0.9,
+            restore: false,
+            guides: false,
+            center: true,
+            highlight: false,
+            cropBoxMovable: false,
+            cropBoxResizable: false, // Caixa fixa no centro
+            toggleDragModeOnDblclick: false
+        });
+    },
+
+    closeCropModal() {
+        const cropModal = document.getElementById('crop-modal');
+        if (cropModal) cropModal.classList.remove('active');
+        
+        if (this.cropperInfo.instance) {
+            this.cropperInfo.instance.destroy();
+            this.cropperInfo.instance = null;
+        }
+    },
+
+    applyCrop() {
+        if (!this.cropperInfo.instance) return;
+
+        // Extrai a imagem final formatada e comprimida pra 150x150 JPEG (reduz o 2MB pra meros ~15KBs)
+        const canvas = this.cropperInfo.instance.getCroppedCanvas({
+            width: 200,
+            height: 200,
+            imageSmoothingEnabled: true,
+            imageSmoothingQuality: 'high',
+        });
+
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.85); // Compressão Jpeg de 85%
+
+        this.user.avatar = compressedBase64;
+        this.saveData();
+        this.updateProfileUI();
+        this.showToast('Foto do perfil linda salva!');
+        
+        this.closeCropModal();
+    },
+
+    addXP(amount) {
+        // Increment avoiding negatives
+        this.user.xp = Math.max(0, this.user.xp + amount);
+        this.saveData();
+        this.updateProfileUI();
+        
+        if (amount > 0) this.showToast(`+${amount} XP ganho!`);
+    },
+
+    // --- Grandes Objetivos de Vida (Mural dos Sonhos) ---
+    promptNewDream() {
+        const dreamText = document.getElementById('dream-text');
+        const dreamModal = document.getElementById('dream-modal');
+        
+        if (!dreamText || !dreamModal) return; // Guard clause
+        
+        dreamText.value = '';
+        dreamModal.classList.add('active');
+        setTimeout(() => dreamText.focus(), 100);
+    },
+
+    closeDreamModal() {
+        const dreamModal = document.getElementById('dream-modal');
+        if (dreamModal) dreamModal.classList.remove('active');
+    },
+
+    saveDream() {
+        const textObj = document.getElementById('dream-text');
+        if (!textObj) return;
+        
+        const text = textObj.value;
+        if (text && text.trim()) {
+            if (!this.user.dreams) this.user.dreams = [];
+            const newId = Date.now().toString(36) + Math.random().toString(36).substr(2);
+            this.user.dreams.push({ id: newId, text: text.trim() });
+            this.saveData();
+            this.renderDreams();
+            this.showToast('Objetivo salvo! Mantenha o foco.');
+            this.closeDreamModal();
+        }
+    },
+
+    deleteDream(id) {
+        if (confirm('Tem certeza que deseja apagar este grande objetivo?')) {
+            this.user.dreams = this.user.dreams.filter(d => d.id !== id);
+            this.saveData();
+            this.renderDreams();
+        }
+    },
+
+    renderDreams() {
+        const container = document.getElementById('dreams-list');
+        if (!container) return; // fail-safe depending on HTML
+        
+        const dreams = Array.isArray(this.user.dreams) ? this.user.dreams : [];
+        container.innerHTML = '';
+        
+        if (dreams.length === 0) {
+            container.innerHTML = `<li style="opacity:0.5; font-size:0.8rem; justify-content:center;">Sem objetivos listados</li>`;
+            return;
+        }
+
+        dreams.forEach(dream => {
+            const li = document.createElement('li');
+            li.className = 'dream-item';
+            li.innerHTML = `
+                <i class="ph ph-star"></i>
+                <div class="dream-content">
+                    <div class="dream-text">${this.escapeHTML(dream.text)}</div>
+                </div>
+                <div class="dream-actions">
+                    <button class="icon-btn" style="width:24px;height:24px;font-size:1rem;" onclick="app.deleteDream('${dream.id}')" aria-label="Remover">
+                        <i class="ph ph-trash"></i>
+                    </button>
+                </div>
+            `;
+            container.appendChild(li);
+        });
+    },
 
     // --- Persistência (FIREBASE SAAS) ---
     loadData() {
