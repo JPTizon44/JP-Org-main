@@ -1,19 +1,32 @@
 :root {
-    /* Colors */
     --bg-color: transparent;
-    --card-bg: rgba(10, 15, 10, 0.75); /* Dark semi-transparent matching sentinel vibe */
-    --text-main: #ffffff;
-    --text-muted: #a1a1aa;
-    --primary: #22c55e; /* Green to match */
+    --card-bg: rgba(15, 20, 25, 0.65); /* Mais transparente para glassmorphism */
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-highlight: rgba(34, 197, 94, 0.15);
     
-    /* Updated Priority Colors */
-    --color-emergencia: #ef4444; /* Red */
-    --color-neutro: #3b82f6; /* Blue */
-    --color-tranquilo: #22c55e; /* Green */
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --primary: #22c55e;
+    
+    /* Global Animations */
+    --anim-speed: 0.4s;
+    --anim-curve: cubic-bezier(0.4, 0, 0.2, 1);
+}
 
-    --border-radius: 16px;
-    --shadow: 0 4px 12px rgba(0, 255, 0, 0.05); /* Slight green glow */
-    --shadow-hover: 0 8px 16px rgba(0, 255, 0, 0.15);
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes pulseCheck {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
 }
 
 * {
@@ -175,16 +188,21 @@ body {
     gap: 20px;
 }
 
-/* Cards */
+/* Cards with Glassmorphism */
 .card {
     background: var(--card-bg);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border: 1px solid rgba(34, 197, 94, 0.2);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid var(--glass-border);
     border-radius: var(--border-radius);
     padding: 16px;
-    box-shadow: var(--shadow);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    animation: slideUp var(--anim-speed) var(--anim-curve) backwards;
 }
+
+#section-lembretes { animation-delay: 0.1s; }
+#section-notas { animation-delay: 0.2s; }
+#section-avisos { animation-delay: 0.3s; }
 
 .card-header {
     display: flex;
@@ -244,14 +262,21 @@ body {
 
 .item {
     display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    padding: 12px;
-    background: rgba(10, 15, 10, 0.5); /* semi-transparent for item inside card */
-    border-radius: 12px;
-    border-left: 4px solid #444;
-    animation: slideIn 0.3s ease;
+    align-items: center;
     gap: 12px;
+    padding: 14px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 14px;
+    margin-bottom: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    transition: all 0.3s var(--anim-curve);
+    animation: fadeIn var(--anim-speed) ease forwards;
+}
+
+.item:hover {
+    background: rgba(255, 255, 255, 0.06);
+    transform: translateX(4px);
+    border-color: rgba(255, 255, 255, 0.1);
 }
 
 @keyframes slideIn {
@@ -347,9 +372,18 @@ body {
     transition: all 0.2s;
 }
 
-.action-btn.check:active { color: var(--color-tranquilo); background: #dcfce7; }
-.action-btn.edit:active { color: var(--primary); background: #e0e0e0; }
-.action-btn.delete:active { color: var(--color-emergencia); background: #fee2e2; }
+.action-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: scale(1.1);
+}
+
+.action-btn.check:active { color: var(--color-tranquilo); }
+.action-btn.edit:active { color: var(--primary); }
+.action-btn.delete:active { color: var(--color-emergencia); }
+
+.action-btn.check:active i {
+    animation: pulseCheck 0.3s ease;
+}
 
 /* Modal */
 .modal {
