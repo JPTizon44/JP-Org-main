@@ -18,6 +18,7 @@ const app = {
     data: {}, // { 'YYYY-MM-DD': { lembretes: [], notas: [], avisos: [] } }
     user: { xp: 0, dreams: [], avatar: null }, // User Profile settings for Gamification
     cropperInfo: { instance: null }, // Stores Cropper instance
+    searchTerm: '', // Termo de busca global
 
     init() {
         this.setupAuthListener();
@@ -592,9 +593,21 @@ const app = {
         this.updateProgress();
     },
 
+    filterItems(query) {
+        this.searchTerm = query.toLowerCase().trim();
+        this.renderAll();
+    },
+
     renderList(category) {
         const container = document.getElementById(`list-${category}`);
-        const items = this.getDailyData()[category];
+        let items = this.getDailyData()[category];
+        
+        // Aplicar Filtro de Busca se houver
+        if (this.searchTerm) {
+            items = items.filter(item => 
+                item.text.toLowerCase().includes(this.searchTerm)
+            );
+        }
         
         container.innerHTML = '';
         
@@ -618,12 +631,16 @@ const app = {
             const checkColor = item.isDone ? 'var(--color-tranquilo)' : 'currentColor';
 
             const timeBadge = item.time ? `<span class="item-time-badge"><i class="ph ph-clock"></i> ${item.time}</span>` : '';
+            const tagBadge = item.tag ? `<span class="item-tag-badge">#${this.escapeHTML(item.tag)}</span>` : '';
 
             div.innerHTML = `
                 <div class="item-content">
                     <div class="item-text">${this.escapeHTML(item.text)}</div>
-                    <div class="item-badge">${item.priority}</div>
-                    ${timeBadge}
+                    <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:4px;">
+                        <div class="item-badge">${item.priority}</div>
+                        ${tagBadge}
+                        ${timeBadge}
+                    </div>
                 </div>
                 <div class="item-actions">
                     <button class="action-btn check" onclick="app.toggleDone('${category}', '${item.id}')" aria-label="Concluir" style="color: ${checkColor};">
@@ -660,11 +677,14 @@ const app = {
 
         title.textContent = itemId ? 'Editar Item' : `Novo(a) ${category.slice(0,-1)}`;
 
+        document.getElementById('item-tag').value = '';
+
         if (itemId) {
             const item = this.getDailyData()[category].find(i => i.id === itemId);
             if (item) {
                 document.getElementById('item-id').value = item.id;
                 document.getElementById('item-text').value = item.text;
+                document.getElementById('item-tag').value = item.tag || '';
                 document.getElementById('item-time').value = item.time || '';
                 document.querySelector(`input[name="priority"][value="${item.priority}"]`).checked = true;
             }
@@ -686,6 +706,7 @@ const app = {
         const category = document.getElementById('item-category').value;
         const id = document.getElementById('item-id').value;
         const text = document.getElementById('item-text').value.trim();
+        const tag = document.getElementById('item-tag').value.trim();
         const priority = document.querySelector('input[name="priority"]:checked').value;
         const time = document.getElementById('item-time').value;
 
@@ -701,13 +722,13 @@ const app = {
                 const oldItem = dailyData[category][itemIndex];
                 const resetNotified = oldItem.time !== time ? false : oldItem.notified;
                 
-                dailyData[category][itemIndex] = { ...oldItem, text, priority, time, notified: resetNotified };
+                dailyData[category][itemIndex] = { ...oldItem, text, tag, priority, time, notified: resetNotified };
                 this.showToast('Item atualizado');
             }
         } else {
             // Add (Generate simple unique ID)
             const newId = Date.now().toString(36) + Math.random().toString(36).substr(2);
-            dailyData[category].push({ id: newId, text, priority, isDone: false, time, notified: false });
+            dailyData[category].push({ id: newId, text, tag, priority, isDone: false, time, notified: false });
             this.showToast('Item adicionado');
         }
 

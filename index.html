@@ -77,6 +77,10 @@
                 <i class="ph ph-caret-right"></i>
             </button>
         </div>
+        <div class="search-container">
+            <i class="ph ph-magnifying-glass search-icon"></i>
+            <input type="text" id="search-input" placeholder="Buscar em notas, avisos..." oninput="app.filterItems(this.value)">
+        </div>
         <div id="daily-progress" class="progress-text"></div>
         <button id="btn-request-notify" class="action-btn" style="position:absolute; right:16px; top:12px; font-size:1.5rem; color:var(--primary); background:rgba(0,0,0,0.5); border-radius:12px; display:none;" aria-label="Ativar Notificações" onclick="app.requestNotificationPermission()">
             <i class="ph ph-bell-ringing"></i>
@@ -215,6 +219,11 @@
                 <div class="input-group">
                     <label for="item-text">Descrição</label>
                     <textarea id="item-text" rows="3" required placeholder="Digite aqui..."></textarea>
+                </div>
+
+                <div class="input-group">
+                    <label for="item-tag">Tag / Categoria (Opcional)</label>
+                    <input type="text" id="item-tag" placeholder="Ex: Trabalho, Estudo, Casa">
                 </div>
 
                 <div class="input-group" id="time-group">
