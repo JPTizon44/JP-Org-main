@@ -24,7 +24,9 @@ const app = {
         { id: 'first_task', title: 'Recruta Sentinel', desc: 'Concluiu sua primeira tarefa.', icon: '🎯', goal: 1, type: 'task_count' },
         { id: 'xp_100', title: 'Agente Nível 1', desc: 'Alcançou 100 XP.', icon: '⭐', goal: 100, type: 'xp' },
         { id: 'task_10', title: 'Operador Eficiente', desc: 'Concluiu 10 tarefas no total.', icon: '⚡', goal: 10, type: 'task_count' },
-        { id: 'dream_first', title: 'Sonhador', desc: 'Adicionou seu primeiro Objetivo de Vida.', icon: '🏷️', goal: 1, type: 'dream_count' }
+        { id: 'dream_first', title: 'Sonhador', desc: 'Adicionou seu primeiro Objetivo de Vida.', icon: '🏷️', goal: 1, type: 'dream_count' },
+        { id: 'night_owl', title: 'Agente Noturno', desc: 'Concluiu uma tarefa entre 00:00 e 05:00.', icon: '🦉', goal: 1, type: 'night_task', hidden: true },
+        { id: 'perfect_day', title: 'Foco Total', desc: 'Concluiu 100% das tarefas de um dia (mín. 3).', icon: '🔥', goal: 1, type: 'perfect_day', hidden: true }
     ],
 
     init() {
@@ -647,15 +649,24 @@ const app = {
         let changed = false;
         if (!this.user.achievements) this.user.achievements = [];
 
-        const historyValues = Object.values(this.user.history || {});
-        const totalTasksDone = historyValues.reduce((acc, curr) => acc + (curr.done || 0), 0);
+        const historyValues = Object.entries(this.user.history || {});
+        const totalTasksDone = historyValues.reduce((acc, [key, curr]) => acc + (curr.done || 0), 0);
         const dreamCount = (this.user.dreams || []).length;
         const currentXP = this.user.xp || 0;
+        
+        // Hora atual para medalha noturna
+        const now = new Date();
+        const hour = now.getHours();
 
         this.achievementsList.forEach(ach => {
             if (this.user.achievements.includes(ach.id)) return;
 
             let unlocked = false;
+            if (ach.id === 'night_owl' && (hour >= 0 && hour < 5)) unlocked = true;
+            if (ach.id === 'perfect_day') {
+                const hadPerfectDay = historyValues.some(([date, stat]) => stat.total >= 3 && stat.done === stat.total);
+                if (hadPerfectDay) unlocked = true;
+            }
             if (ach.type === 'task_count' && totalTasksDone >= ach.goal) unlocked = true;
             if (ach.type === 'xp' && currentXP >= ach.goal) unlocked = true;
             if (ach.type === 'dream_count' && dreamCount >= ach.goal) unlocked = true;
@@ -687,6 +698,22 @@ const app = {
         list.innerHTML = '';
         this.achievementsList.forEach(ach => {
             const isUnlocked = this.user.achievements && this.user.achievements.includes(ach.id);
+            
+            // Se for secreta e não estiver desbloqueada, mostra como "Bloqueada"
+            if (ach.hidden && !isUnlocked) {
+                const card = document.createElement('div');
+                card.className = `achievement-card locked-secret`;
+                card.innerHTML = `
+                    <div class="achievement-icon" style="filter: blur(4px);">🔒</div>
+                    <div class="achievement-info">
+                        <h4>???</h4>
+                        <p>Segredo do Sentinel</p>
+                    </div>
+                `;
+                list.appendChild(card);
+                return;
+            }
+
             const card = document.createElement('div');
             card.className = `achievement-card ${isUnlocked ? 'unlocked' : ''}`;
             
@@ -699,6 +726,47 @@ const app = {
             `;
             list.appendChild(card);
         });
+    },
+
+    openStats() {
+        this.renderStats();
+        document.getElementById('stats-modal').classList.add('active');
+        this.closeSidebar();
+    },
+
+    closeStats() {
+        document.getElementById('stats-modal').classList.remove('active');
+    },
+
+    renderStats() {
+        const content = document.getElementById('stats-content');
+        if (!content) return;
+
+        const history = Object.values(this.user.history || {});
+        const totalDone = history.reduce((acc, curr) => acc + (curr.done || 0), 0);
+        const totalCreated = history.reduce((acc, curr) => acc + (curr.total || 0), 0);
+        const successRate = totalCreated > 0 ? Math.round((totalDone / totalCreated) * 100) : 0;
+        const daysActive = history.length;
+        const rank = this.getRank();
+
+        content.innerHTML = `
+            <div class="stat-item">
+                <div class="stat-value">${totalDone}</div>
+                <div class="stat-label">Tarefas Concluídas</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">${successRate}%</div>
+                <div class="stat-label">Taxa de Sucesso Geral</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">${daysActive}</div>
+                <div class="stat-label">Dias de Operação</div>
+            </div>
+            <div class="stat-item" style="grid-column: span 2; background: var(--glass-highlight);">
+                <div class="stat-value" style="color: var(--primary); font-size: 1.2rem;">${rank.name}</div>
+                <div class="stat-label">Patente Atual</div>
+            </div>
+        `;
     },
 
     // --- Core Logic ---

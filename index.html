@@ -140,7 +140,7 @@
                 <div class="nav-section-title">GAMIFICAÇÃO</div>
                 <ul class="nav-list">
                     <li onclick="app.openAchievements()"><i class="ph ph-medal"></i> Suas Conquistas</li>
-                    <li><i class="ph ph-chart-line-up"></i> Estatísticas</li>
+                    <li onclick="app.openStats()"><i class="ph ph-chart-line-up"></i> Estatísticas</li>
                 </ul>
 
                 <div class="nav-section-title" style="margin-top: 24px;">DESEMPENHO SEMANAL</div>
@@ -320,6 +320,24 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn-save" style="width: 100%;" onclick="app.closeAchievements()">Fechar Painel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Estatísticas -->
+    <div id="stats-modal" class="modal" style="z-index: 1070;">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3>Relatório do Agente</h3>
+                <button class="close-btn" onclick="app.closeStats()" aria-label="Fechar">
+                    <i class="ph ph-x"></i>
+                </button>
+            </div>
+            <div id="stats-content" class="stats-container">
+                <!-- Estatísticas injetadas via JS -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-save" style="width: 100%;" onclick="app.closeStats()">Entendido</button>
             </div>
         </div>
     </div>
