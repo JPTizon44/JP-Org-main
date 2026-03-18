@@ -16,9 +16,16 @@ const app = {
     userId: null,
     currentDate: new Date(),
     data: {}, // { 'YYYY-MM-DD': { lembretes: [], notas: [], avisos: [] } }
-    user: { xp: 0, dreams: [], avatar: null }, // User Profile settings for Gamification
+    user: { xp: 0, dreams: [], avatar: null, history: {}, achievements: [] }, // User Profile settings for Gamification
     cropperInfo: { instance: null }, // Stores Cropper instance
     searchTerm: '', // Termo de busca global
+
+    achievementsList: [
+        { id: 'first_task', title: 'Recruta Sentinel', desc: 'Concluiu sua primeira tarefa.', icon: '🎯', goal: 1, type: 'task_count' },
+        { id: 'xp_100', title: 'Agente Nível 1', desc: 'Alcançou 100 XP.', icon: '⭐', goal: 100, type: 'xp' },
+        { id: 'task_10', title: 'Operador Eficiente', desc: 'Concluiu 10 tarefas no total.', icon: '⚡', goal: 10, type: 'task_count' },
+        { id: 'dream_first', title: 'Sonhador', desc: 'Adicionou seu primeiro Objetivo de Vida.', icon: '🏷️', goal: 1, type: 'dream_count' }
+    ],
 
     init() {
         this.setupAuthListener();
@@ -201,6 +208,25 @@ const app = {
         } else {
             new Notification(`${iconHtml} SENTINEL`, options);
         }
+
+        this.playBeep();
+    },
+
+    playBeep() {
+        try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContext) return;
+            const audioCtx = new AudioContext();
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
+            gainNode.gain.setValueAtTime(0.04, audioCtx.currentTime);
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 0.15);
+        } catch(e) {}
     },
 
     // --- Sidebar (Menu Hambúrguer) ---
@@ -570,11 +596,109 @@ const app = {
         const progressEl = document.getElementById('daily-progress');
         if (total === 0) {
             progressEl.textContent = 'Nenhuma tarefa para hoje';
-        } else if (done === total) {
+        } else if (done === total && total > 0) {
             progressEl.textContent = '🎉 Todas as tarefas concluídas!';
         } else {
             progressEl.textContent = `${done} de ${total} tarefas concluídas`;
         }
+
+        // Salvar Histórico para o Gráfico
+        const dateStr = this.getDateString(this.currentDate);
+        if (!this.user.history) this.user.history = {};
+        this.user.history[dateStr] = { done, total };
+
+        this.renderProductivityChart();
+        this.checkAchievements();
+    },
+
+    renderProductivityChart() {
+        const container = document.getElementById('productivity-chart');
+        if (!container) return;
+
+        // Pegar últimos 7 dias
+        const days = [];
+        const today = new Date();
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date(today);
+            d.setDate(d.getDate() - i);
+            days.push(this.getDateString(d));
+        }
+
+        container.innerHTML = '';
+        days.forEach(date => {
+            const stat = this.user.history ? this.user.history[date] : null;
+            const percent = (stat && stat.total > 0) ? (stat.done / stat.total) * 100 : 0;
+            
+            const barBg = document.createElement('div');
+            barBg.className = 'chart-bar-bg';
+            barBg.title = stat ? `${stat.done}/${stat.total} em ${date}` : 'Sem dados';
+            
+            const barFill = document.createElement('div');
+            barFill.className = 'chart-bar-fill';
+            barFill.style.height = `${Math.max(5, percent)}%`;
+            if (percent === 100) barFill.style.background = '#22c55e';
+            
+            barBg.appendChild(barFill);
+            container.appendChild(barBg);
+        });
+    },
+
+    checkAchievements() {
+        let changed = false;
+        if (!this.user.achievements) this.user.achievements = [];
+
+        const historyValues = Object.values(this.user.history || {});
+        const totalTasksDone = historyValues.reduce((acc, curr) => acc + (curr.done || 0), 0);
+        const dreamCount = (this.user.dreams || []).length;
+        const currentXP = this.user.xp || 0;
+
+        this.achievementsList.forEach(ach => {
+            if (this.user.achievements.includes(ach.id)) return;
+
+            let unlocked = false;
+            if (ach.type === 'task_count' && totalTasksDone >= ach.goal) unlocked = true;
+            if (ach.type === 'xp' && currentXP >= ach.goal) unlocked = true;
+            if (ach.type === 'dream_count' && dreamCount >= ach.goal) unlocked = true;
+
+            if (unlocked) {
+                this.user.achievements.push(ach.id);
+                this.showToast(`🏆 Conquista: ${ach.title}!`);
+                changed = true;
+            }
+        });
+
+        if (changed) this.saveData();
+    },
+
+    openAchievements() {
+        this.renderAchievements();
+        document.getElementById('achievements-modal').classList.add('active');
+        this.closeSidebar();
+    },
+
+    closeAchievements() {
+        document.getElementById('achievements-modal').classList.remove('active');
+    },
+
+    renderAchievements() {
+        const list = document.getElementById('achievements-list');
+        if (!list) return;
+
+        list.innerHTML = '';
+        this.achievementsList.forEach(ach => {
+            const isUnlocked = this.user.achievements && this.user.achievements.includes(ach.id);
+            const card = document.createElement('div');
+            card.className = `achievement-card ${isUnlocked ? 'unlocked' : ''}`;
+            
+            card.innerHTML = `
+                <div class="achievement-icon">${ach.icon}</div>
+                <div class="achievement-info">
+                    <h4>${ach.title}</h4>
+                    <p>${ach.desc}</p>
+                </div>
+            `;
+            list.appendChild(card);
+        });
     },
 
     // --- Core Logic ---

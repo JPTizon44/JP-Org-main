@@ -139,9 +139,19 @@
 
                 <div class="nav-section-title">GAMIFICAÇÃO</div>
                 <ul class="nav-list">
-                    <li><i class="ph ph-medal"></i> Suas Conquistas</li>
+                    <li onclick="app.openAchievements()"><i class="ph ph-medal"></i> Suas Conquistas</li>
                     <li><i class="ph ph-chart-line-up"></i> Estatísticas</li>
                 </ul>
+
+                <div class="nav-section-title" style="margin-top: 24px;">DESEMPENHO SEMANAL</div>
+                <div class="chart-wrapper">
+                    <div id="productivity-chart" class="chart-container">
+                        <!-- SVG Chart injectado via JS -->
+                    </div>
+                    <div class="chart-labels">
+                        <span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sab</span><span>Dom</span>
+                    </div>
+                </div>
 
                 <div class="nav-section-title" style="margin-top: 24px;">SISTEMA</div>
                 <ul class="nav-list">
@@ -292,6 +302,24 @@
             <div class="modal-footer">
                 <button type="button" class="btn-cancel" onclick="app.closeDreamModal()">Cancelar</button>
                 <button type="button" class="btn-save" onclick="app.saveDream()">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Conquistas -->
+    <div id="achievements-modal" class="modal" style="z-index: 1070;">
+        <div class="modal-content" style="max-width: 450px;">
+            <div class="modal-header">
+                <h3>Conquistas do Agente</h3>
+                <button class="close-btn" onclick="app.closeAchievements()" aria-label="Fechar">
+                    <i class="ph ph-x"></i>
+                </button>
+            </div>
+            <div id="achievements-list" class="achievements-grid">
+                <!-- Conquistas injetadas via JS -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-save" style="width: 100%;" onclick="app.closeAchievements()">Fechar Painel</button>
             </div>
         </div>
     </div>
