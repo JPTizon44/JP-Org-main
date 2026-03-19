@@ -3,10 +3,12 @@ if (!firebase.apps.length) {
     firebase.initializeApp({
       apiKey: "AIzaSyAYYZF7RDi1qcH9y4i47bsNVCpjvPgXlsE",
       authDomain: "sentinel-22ad5.firebaseapp.com",
+      databaseURL: "https://sentinel-22ad5-default-rtdb.firebaseio.com",
       projectId: "sentinel-22ad5",
       storageBucket: "sentinel-22ad5.firebasestorage.app",
       messagingSenderId: "910901030196",
-      appId: "1:910901030196:web:67b3ec4470ac0302fc8961"
+      appId: "1:910901030196:web:67b3ec4470ac0302fc8961",
+      measurementId: "G-BZ8YMDVPJP"
     });
 }
 const db = firebase.database();
