@@ -557,7 +557,7 @@ const app = {
             this.updateProfileUI();
         }).catch((error) => {
             console.error("Erro carregando dados do Firebase:", error);
-            this.showToast('Offline ativo. Usando os últimos dados salvos no celular.');
+            this.showToast('Erro Firebase Banco: ' + error.message);
         });
     },
 
