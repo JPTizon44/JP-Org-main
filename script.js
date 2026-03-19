@@ -47,8 +47,12 @@ const app = {
                 this.userId = user.uid;
                 if(loginOverlay) loginOverlay.classList.remove('active');
                 
-                // Mágica: Puxa 100% dos dados direto da nuvem ao logar
-                this.loadData();
+                // Mágica: Puxa os dados direto da nuvem ao logar
+                // No iOS PWA, o WebSocket do Banco de Dados pode demorar 1 segundinho pra receber o Token
+                // Esse delay evita que o Firebase expulse o PWA dando erro de conexão!
+                setTimeout(() => {
+                    this.loadData();
+                }, 1500);
             } else {
                 this.userId = null;
                 if(loginOverlay) loginOverlay.classList.add('active');
