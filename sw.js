@@ -1,4 +1,4 @@
-const CACHE_NAME = 'daysync-v5';
+const CACHE_NAME = 'daysync-v6';
 const ASSETS = [
     './',
     './index.html',

@@ -345,11 +345,11 @@
     <!-- Toast Notification -->
     <div id="toast" class="toast">Trabalho salvo com sucesso!</div>
 
-    <script src="script.js?v=10"></script>
+    <script src="script.js?v=11"></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js?v=8')
+                navigator.serviceWorker.register('sw.js?v=9')
                     .then(registration => {
                         console.log('SW registered');
                         registration.update(); // Force background update of the SW

@@ -497,6 +497,25 @@ const app = {
         
         this.showToast('Sincronizando Banco de Dados...');
         
+        // Tenta puxar cache local instantâneo para não deixar a tela vazia offline
+        try {
+            const local = localStorage.getItem('sentinel_offline_data');
+            if (local) {
+                const parsed = JSON.parse(local);
+                this.data = parsed.data || {};
+                this.user = { 
+                    xp: parsed.profile?.xp || 0, 
+                    dreams: parsed.profile?.dreams ? (Array.isArray(parsed.profile.dreams) ? parsed.profile.dreams : Object.values(parsed.profile.dreams)) : [], 
+                    avatar: parsed.profile?.avatar || null,
+                    history: parsed.profile?.history || {},
+                    achievements: parsed.profile?.achievements ? (Array.isArray(parsed.profile.achievements) ? parsed.profile.achievements : Object.values(parsed.profile.achievements)) : []
+                };
+                this.renderAll();
+                this.renderDreams();
+                this.updateProfileUI();
+            }
+        } catch(e) {}
+        
         db.ref('users/' + this.userId).once('value').then((snapshot) => {
             if (snapshot.exists()) {
                 const dbData = snapshot.val();
@@ -505,26 +524,47 @@ const app = {
                 const profile = dbData.profile || {};
                 this.user = { 
                     xp: profile.xp || 0, 
-                    dreams: Array.isArray(profile.dreams) ? profile.dreams : [], 
-                    avatar: profile.avatar || null 
+                    dreams: profile.dreams ? (Array.isArray(profile.dreams) ? profile.dreams : Object.values(profile.dreams)) : [], 
+                    avatar: profile.avatar || null,
+                    history: profile.history || {},
+                    achievements: profile.achievements ? (Array.isArray(profile.achievements) ? profile.achievements : Object.values(profile.achievements)) : []
                 };
             } else {
-                this.data = {};
-                this.user = { xp: 0, dreams: [], avatar: null };
+                // Se a conta for nova na nuvem, mas tiver dados locais (migração)
+                if (Object.keys(this.data).length === 0) {
+                    this.data = {};
+                    this.user = { xp: 0, dreams: [], avatar: null, history: {}, achievements: [] };
+                }
             }
             
-            // Depois do Download finalizado, pinta a tela com os dados da Nuvem
+            // Backup dos dados mais recentes da nuvem no local storage
+            try {
+                localStorage.setItem('sentinel_offline_data', JSON.stringify({
+                    data: this.data,
+                    profile: this.user
+                }));
+            } catch(e) {}
+            
+            // Pinta a tela com os dados atualizados
             this.renderAll();
             this.renderDreams();
             this.updateProfileUI();
         }).catch((error) => {
-            console.error("Erro carregando dados do Firestore:", error);
-            this.showToast('Erro de Conexão. Modo Offline Limite.');
+            console.error("Erro carregando dados do Firebase:", error);
+            this.showToast('Offline ativo. Usando os últimos dados salvos no celular.');
         });
     },
 
     saveData() {
         if (!this.userId) return;
+        
+        // Backup Local imediato para proteção contra quedas de internet
+        try {
+            localStorage.setItem('sentinel_offline_data', JSON.stringify({
+                data: this.data,
+                profile: this.user
+            }));
+        } catch(e) {}
         
         db.ref('users/' + this.userId).update({
             data: this.data,
